@@ -24,6 +24,10 @@ Naming/PredicatePrefix:
     - is_32_bit?
     - is_64_bit?
 
+Naming/MethodParameterName:
+  AllowedNames:
+    - go
+
 # Only enforce documentation for public APIs.
 # Checked by the tests.yml syntax job
 Style/Documentation:
