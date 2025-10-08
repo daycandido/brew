@@ -85,8 +85,6 @@ module Homebrew
 
       sig { params(name: String).void }
       def go(name)
-        raise "name(#{name.inspect}) should be a String object" unless name.is_a? String
-
         @entries << Entry.new(:go, name)
       end
 
