@@ -437,6 +437,21 @@ RSpec.describe "Utils::Curl" do
       expect(curl_args(*args, referer: nil).join(" ")).not_to include("--referer")
     end
 
+    it "uses `--proto-redir` to restrict redirect protocols" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.20.0"))
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http,ftp,ftps")
+    end
+
+    it "doesn't use `--proto-redir` when curl version is too old" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.19.0"))
+      expect(curl_args(*args).join(" ")).not_to include("--proto-redir")
+    end
+
+    it "doesn't use `--proto-redir` when checking version" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.20.0"))
+      expect(curl_args("-V").join(" ")).not_to include("--proto-redir")
+    end
+
     it "uses HOMEBREW_USER_AGENT_FAKE_SAFARI when `:user_agent` is `:browser` or `:fake`" do
       expect(curl_args(*args, user_agent: :browser).join(" "))
         .to include("--user-agent #{HOMEBREW_USER_AGENT_FAKE_SAFARI}")
