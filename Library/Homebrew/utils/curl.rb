@@ -143,6 +143,8 @@ module Utils
 
       args << "--referer" << referer if referer.present?
 
+      args << "--proto-redir" << "-all,https,http,ftp,ftps"
+
       (args + extra_args).map(&:to_s)
     end
 

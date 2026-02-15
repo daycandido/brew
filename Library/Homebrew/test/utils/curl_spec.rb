@@ -437,6 +437,10 @@ RSpec.describe "Utils::Curl" do
       expect(curl_args(*args, referer: nil).join(" ")).not_to include("--referer")
     end
 
+    it "uses `--proto-redir` to restrict redirect protocols" do
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http,ftp,ftps")
+    end
+
     it "uses HOMEBREW_USER_AGENT_FAKE_SAFARI when `:user_agent` is `:browser` or `:fake`" do
       expect(curl_args(*args, user_agent: :browser).join(" "))
         .to include("--user-agent #{HOMEBREW_USER_AGENT_FAKE_SAFARI}")
