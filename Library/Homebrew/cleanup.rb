@@ -491,9 +491,11 @@ module Homebrew
       @disk_cleanup_size += path.disk_usage
 
       if dry_run?
-        puts "Would remove: #{path} (#{path.abv})"
+        puts "#{Tty.bold}Would remove:#{Tty.reset} #{path} (#{path.abv})"
       else
-        puts "Removing: #{path}... (#{path.abv})"
+        message = "#{Tty.red}Removing:#{Tty.reset} #{path}... (#{path.abv})"
+        message += " 🗑️" unless Homebrew::EnvConfig.no_emoji?
+        puts message
         yield
       end
     end
