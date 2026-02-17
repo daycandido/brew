@@ -6,6 +6,7 @@ require "formula"
 require "keg"
 require "cask/caskroom"
 require "api"
+require "utils/tty"
 
 module Homebrew
   module Cmd
@@ -107,12 +108,12 @@ module Homebrew
               outdated_versions = outdated_kegs.group_by { |keg| Formulary.from_keg(keg).full_name }
                                                .sort_by { |full_name, _kegs| full_name }
                                                .map do |full_name, kegs|
-                "#{full_name} (#{kegs.map(&:version).join(", ")})"
+                "#{full_name} (#{Tty.red}#{kegs.map(&:version).join(", ")}#{Tty.reset})"
               end.join(", ")
 
-              pinned_version = " [pinned at #{f.pinned_version}]" if f.pinned?
+              pinned_version = " [pinned at #{Tty.yellow}#{f.pinned_version}#{Tty.reset}]" if f.pinned?
 
-              puts "#{outdated_versions} < #{current_version}#{pinned_version}"
+              puts "#{outdated_versions} < #{Tty.green}#{current_version}#{Tty.reset}#{pinned_version}"
             else
               puts f.full_installed_specified_name
             end
