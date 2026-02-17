@@ -57,6 +57,9 @@ module Tty
 
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
+      # optimization: return original string if no ANSI codes are present
+      return string unless string.include?("\033[")
+
       string.gsub(/\033\[\d+(;\d+)*m/, "")
     end
 
