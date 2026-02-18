@@ -57,6 +57,10 @@ module Tty
 
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
+      # Return early if there are no ANSI escape codes (performance optimization).
+      # Use .dup to ensure we return a mutable string, matching gsub's behavior.
+      return string.dup unless string.include?("\033[")
+
       string.gsub(/\033\[\d+(;\d+)*m/, "")
     end
 
