@@ -4,6 +4,7 @@
 require "json"
 require "cmd/info"
 require "utils/output"
+require "utils/formatter"
 
 module Cask
   class Info
@@ -54,18 +55,18 @@ module Cask
 
     sig { params(cask: Cask).returns(String) }
     def self.installation_info(cask)
-      return "Not installed" unless cask.installed?
+      return Formatter.error("Not installed") unless cask.installed?
       return "No installed version" unless (installed_version = cask.installed_version).present?
 
       versioned_staged_path = cask.caskroom_path.join(installed_version)
 
-      return "Installed\n#{versioned_staged_path} (#{Formatter.error("does not exist")})\n" unless versioned_staged_path.exist?
+      return "#{Formatter.success("Installed")}\n#{versioned_staged_path} (#{Formatter.error("does not exist")})\n" unless versioned_staged_path.exist?
 
       path_details = versioned_staged_path.children.sum(&:disk_usage)
 
       tab = Tab.for_cask(cask)
 
-      info = ["Installed"]
+      info = [Formatter.success("Installed")]
       info << "#{versioned_staged_path} (#{disk_usage_readable(path_details)})"
       info << "  #{tab}" if tab.tabfile&.exist?
       info.join("\n")

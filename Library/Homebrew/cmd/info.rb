@@ -12,6 +12,7 @@ require "json"
 require "utils/spdx"
 require "deprecate_disable"
 require "api"
+require "utils/formatter"
 
 module Homebrew
   module Cmd
@@ -326,7 +327,7 @@ module Homebrew
           *versioned.sort_by(&:scheme_and_version),
         ]
         if kegs.empty?
-          puts "Not installed"
+          puts Formatter.error("Not installed")
           if (bottle = formula.bottle)
             begin
               bottle.fetch_tab(quiet: !args.debug?) if args.fetch_manifest?
@@ -339,7 +340,7 @@ module Homebrew
             end
           end
         else
-          puts "Installed"
+          puts Formatter.success("Installed")
           kegs.each do |keg|
             puts "#{keg} (#{keg.abv})#{" *" if keg.linked?}"
             tab = keg.tab.to_s

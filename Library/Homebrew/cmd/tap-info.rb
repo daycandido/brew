@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "abstract_command"
+require "utils/formatter"
 
 module Homebrew
   module Cmd
@@ -69,7 +70,7 @@ module Homebrew
             puts unless i.zero?
             info = "#{tap}: "
             if tap.installed?
-              info += "Installed"
+              info += Formatter.success("Installed")
               info += if (contents = tap.contents).blank?
                 "\nNo commands/casks/formulae"
               else
@@ -83,7 +84,7 @@ module Homebrew
               info += "\nlast commit: #{tap.git_last_commit || "never"}"
               info += "\nbranch: #{tap.git_branch || "(none)"}" if default_branches.exclude?(tap.git_branch)
             else
-              info += "Not installed"
+              info += Formatter.error("Not installed")
             end
             puts info
           end
