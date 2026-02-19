@@ -356,8 +356,6 @@ module Homebrew
 
     sig { params(tool_name: Symbol, arguments: T::Hash[String, T.untyped]).returns(T::Array[String]) }
     def tool_command_arguments(tool_name, arguments)
-      require "shellwords"
-
       case tool_name
       when :style
         style_args = []
@@ -382,7 +380,6 @@ module Homebrew
         [arguments["formula_or_cask"]]
       end.compact
         .reject(&:empty?)
-        .map { |arg| Shellwords.escape(arg) }
     end
 
     sig {
