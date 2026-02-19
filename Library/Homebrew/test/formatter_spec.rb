@@ -124,4 +124,24 @@ RSpec.describe Formatter do
       expect(described_class.truncate("this is a long string", max: 10, omission: " [...]")).to eq("this [...]")
     end
   end
+
+  describe "::url" do
+    it "returns an underlined string" do
+      allow($stdout).to receive(:tty?).and_return(true)
+      expect(described_class.url("http://example.com")).to include("http://example.com")
+      expect(described_class.url("http://example.com")).to include("\033[4m")
+      expect(described_class.url("http://example.com")).to include("\033[24m")
+    end
+
+    it "returns a hyperlink when TTY is supported" do
+      allow($stdout).to receive(:tty?).and_return(true)
+      allow(Tty).to receive(:color?).and_return(true)
+      expect(described_class.url("http://example.com")).to include("\033]8;;http://example.com\033\\")
+    end
+
+    it "does not return a hyperlink when TTY is unsupported" do
+      allow(Tty).to receive(:color?).and_return(false)
+      expect(described_class.url("http://example.com")).not_to include("\033]8;;")
+    end
+  end
 end
