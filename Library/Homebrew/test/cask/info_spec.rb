@@ -17,7 +17,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> local-transmission: 2.61
       https://transmissionbt.com/
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/l/local-transmission.rb
       ==> Name
       Transmission
@@ -34,7 +34,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-depends-on-cask-multiple: 1.2.3
       https://brew.sh/with-depends-on-cask-multiple
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-depends-on-cask-multiple.rb
       ==> Name
       None
@@ -53,7 +53,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-depends-on-everything: 1.2.3
       https://brew.sh/with-depends-on-everything
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-depends-on-everything.rb
       ==> Name
       None
@@ -72,7 +72,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-auto-updates: 1.0 (auto_updates)
       https://brew.sh/autoupdates
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-auto-updates.rb
       ==> Name
       AutoUpdates
@@ -89,7 +89,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-caveats: 1.2.3
       https://brew.sh/
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-caveats.rb
       ==> Name
       None
@@ -116,7 +116,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-conditional-caveats: 1.2.3
       https://brew.sh/
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-conditional-caveats.rb
       ==> Name
       None
@@ -133,7 +133,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> with-languages: 1.2.3
       https://brew.sh/
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/with-languages.rb
       ==> Name
       None
@@ -152,7 +152,7 @@ RSpec.describe Cask::Info, :cask do
     end.to output(<<~EOS).to_stdout
       ==> without-languages: 1.2.3
       https://brew.sh/
-      Not installed
+      Not installed ✘
       From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/w/without-languages.rb
       ==> Name
       None
@@ -180,7 +180,7 @@ RSpec.describe Cask::Info, :cask do
       end.to output(<<~EOS).to_stdout
         ==> local-transmission: 2.61
         https://transmissionbt.com/
-        Installed
+        Installed ✔
         #{caskroom}/2.61 (0B)
           Installed using the formulae.brew.sh API on #{Time.at(time).strftime("%Y-%m-%d at %H:%M:%S")}
         From: https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/l/local-transmission.rb

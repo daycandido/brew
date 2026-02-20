@@ -326,7 +326,7 @@ module Homebrew
           *versioned.sort_by(&:scheme_and_version),
         ]
         if kegs.empty?
-          puts "Not installed"
+          puts Formatter.error("Not installed#{" ✘" unless Homebrew::EnvConfig.no_emoji?}")
           if (bottle = formula.bottle)
             begin
               bottle.fetch_tab(quiet: !args.debug?) if args.fetch_manifest?
@@ -339,7 +339,7 @@ module Homebrew
             end
           end
         else
-          puts "Installed"
+          puts Formatter.success("Installed#{" ✔" unless Homebrew::EnvConfig.no_emoji?}")
           kegs.each do |keg|
             puts "#{keg} (#{keg.abv})#{" *" if keg.linked?}"
             tab = keg.tab.to_s
