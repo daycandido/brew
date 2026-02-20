@@ -54,6 +54,27 @@ RSpec.describe Formatter do
 
       it { is_expected.to eq("\n") }
     end
+
+    describe "with ANSI codes" do
+      let(:input) { ["\e[31ma\e[0m", "b"] }
+
+      it "calculates width correctly ignoring ANSI codes" do
+        allow_any_instance_of(IO).to receive(:tty?).and_return(true)
+        allow(Tty).to receive(:width).and_return(10)
+
+        # "a" (1 char visible) and "b" (1 char visible)
+        # gap is 2.
+        # Max length is 1.
+        # Cols = (10 + 2) / (1 + 2) = 4.
+        # Recalculated cols for 2 items = 2.
+        # Col width = ((10 + 2) / 2) - 2 = 4.
+        # Padding for "a" = 4 - 1 = 3 spaces.
+        # Gap = 2 spaces.
+        # Result: "a" + "   " + "  " + "b" = "a     b"
+
+        expect(columns).to eq("\e[31ma\e[0m     b\n")
+      end
+    end
   end
 
   describe "::format_help_text" do
