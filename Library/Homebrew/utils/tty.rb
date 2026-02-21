@@ -58,6 +58,15 @@ module Tty
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
       string.gsub(/\033\[\d+(;\d+)*m/, "")
+            .gsub(/\033\]8;.*?(?:\033\\|\u0007)/, "")
+    end
+
+    sig { params(text: String, url: String).returns(String) }
+    def hyperlink(text, url)
+      return text unless color?
+      return text if Homebrew::EnvConfig.no_hyperlinks?
+
+      "\033]8;;#{url}\033\\#{text}\033]8;;\033\\"
     end
 
     sig { params(line_count: Integer).returns(String) }

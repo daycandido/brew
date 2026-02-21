@@ -423,6 +423,10 @@ module Homebrew
                      "after a failed install.",
         boolean:     true,
       },
+      HOMEBREW_NO_HYPERLINKS:                    {
+        description: "If set, do not print the OSC 8 escape sequence for hyperlinks.",
+        boolean:     true,
+      },
       HOMEBREW_NO_INSECURE_REDIRECT:             {
         description: "If set, forbid redirects from secure HTTPS to insecure HTTP." \
                      "\n\n    *Note:* while ensuring your downloads are fully secure, this is likely to cause " \
