@@ -124,4 +124,12 @@ RSpec.describe Formatter do
       expect(described_class.truncate("this is a long string", max: 10, omission: " [...]")).to eq("this [...]")
     end
   end
+
+  describe "::url" do
+    it "calls Tty.hyperlink with correct arguments" do
+      url = "http://example.com"
+      expect(Tty).to receive(:hyperlink).with("#{Tty.underline}#{url}#{Tty.no_underline}", url).and_return("mocked_link")
+      described_class.url(url)
+    end
+  end
 end
