@@ -101,7 +101,7 @@ module Formatter
 
   sig { params(string: T.any(NilClass, String, URI::Generic)).returns(String) }
   def self.url(string)
-    "#{Tty.underline}#{string}#{Tty.no_underline}"
+    Tty.hyperlink("#{Tty.underline}#{string}#{Tty.no_underline}", string.to_s)
   end
 
   sig { params(label: T.nilable(String), string: T.any(String, Exception), color: Symbol).returns(String) }
