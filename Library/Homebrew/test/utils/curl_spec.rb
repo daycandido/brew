@@ -520,6 +520,16 @@ RSpec.describe "Utils::Curl" do
         end
       end
     end
+
+    it "adds --proto-redir restrictions for modern curl" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.20.0"))
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http,ftp,ftps")
+    end
+
+    it "does not add --proto-redir for old curl" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.19.0"))
+      expect(curl_args(*args).join(" ")).not_to include("--proto-redir")
+    end
   end
 
   describe "::url_protected_by_cloudflare?" do
