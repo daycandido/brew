@@ -411,6 +411,10 @@ module Homebrew
         description: "If set, do not print any hints about changing Homebrew's behaviour with environment variables.",
         boolean:     true,
       },
+      HOMEBREW_NO_HYPERLINKS:                    {
+        description: "If set, do not use OSC 8 escape sequences for hyperlinks.",
+        boolean:     true,
+      },
       HOMEBREW_NO_FORCE_BREW_WRAPPER:            {
         description: "If set, disables `$HOMEBREW_FORCE_BREW_WRAPPER` behaviour, even if set.",
         # We use backticks to render "Deprecated:" in bold.
