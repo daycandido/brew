@@ -124,4 +124,13 @@ RSpec.describe Formatter do
       expect(described_class.truncate("this is a long string", max: 10, omission: " [...]")).to eq("this [...]")
     end
   end
+
+  describe "::url" do
+    it "returns an OSC 8 hyperlink" do
+      allow($stdout).to receive(:tty?).and_return(true)
+      allow(Tty).to receive(:color?).and_return(true)
+
+      expect(described_class.url("http://example.com")).to match(/\033\]8;;http:\/\/example\.com\033\\.*http:\/\/example\.com.*\033\]8;;\033\\/)
+    end
+  end
 end
