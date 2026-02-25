@@ -57,7 +57,7 @@ module Tty
 
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
-      string.gsub(/\033\[\d+(;\d+)*m/, "")
+      string.gsub(/\033\[\d+(;\d+)*m/, "").gsub(/\033\]8;;.*?\a/, "")
     end
 
     sig { params(line_count: Integer).returns(String) }
@@ -118,6 +118,14 @@ module Tty
     sig { params(string: String).returns(String) }
     def truncate(string)
       (w = width).zero? ? string.to_s : (string.to_s[0, w - 4] || "")
+    end
+
+    sig { params(text: String, url: String).returns(String) }
+    def hyperlink(text, url)
+      require "env_config"
+      return text if Homebrew::EnvConfig.no_hyperlinks? || !color?
+
+      "\033]8;;#{url}\a#{text}\033]8;;\a"
     end
 
     sig { returns(String) }
