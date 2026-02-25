@@ -5,6 +5,14 @@ RSpec.describe Tty do
     it "removes ANSI escape codes from a string" do
       expect(described_class.strip_ansi("\033[36;7mhello\033[0m")).to eq("hello")
     end
+
+    it "returns a new mutable string when no ANSI codes are present" do
+      s = "hello".freeze
+      result = described_class.strip_ansi(s)
+      expect(result).to eq("hello")
+      expect(result).not_to equal(s)
+      expect(result).not_to be_frozen
+    end
   end
 
   describe "::width" do
