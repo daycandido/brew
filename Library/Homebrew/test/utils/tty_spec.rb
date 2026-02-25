@@ -5,6 +5,30 @@ RSpec.describe Tty do
     it "removes ANSI escape codes from a string" do
       expect(described_class.strip_ansi("\033[36;7mhello\033[0m")).to eq("hello")
     end
+
+    it "removes OSC 8 hyperlinks" do
+      expect(described_class.strip_ansi("\033]8;;http://example.com\aexample\033]8;;\a")).to eq("example")
+    end
+  end
+
+  describe "::hyperlink" do
+    it "returns the string if not a TTY" do
+      allow($stdout).to receive(:tty?).and_return(false)
+      expect(described_class.hyperlink("text", "url")).to eq("text")
+    end
+
+    it "returns the string if HOMEBREW_NO_HYPERLINKS is set" do
+      allow($stdout).to receive(:tty?).and_return(true)
+      ENV["HOMEBREW_NO_HYPERLINKS"] = "1"
+      expect(described_class.hyperlink("text", "url")).to eq("text")
+    ensure
+      ENV.delete("HOMEBREW_NO_HYPERLINKS")
+    end
+
+    it "returns an OSC 8 hyperlink if a TTY" do
+      allow($stdout).to receive(:tty?).and_return(true)
+      expect(described_class.hyperlink("text", "url")).to eq("\033]8;;url\atext\033]8;;\a")
+    end
   end
 
   describe "::width" do

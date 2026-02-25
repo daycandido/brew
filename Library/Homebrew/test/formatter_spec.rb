@@ -111,6 +111,18 @@ RSpec.describe Formatter do
     end
   end
 
+  describe "::url" do
+    it "returns the URL string if not a TTY" do
+      allow_any_instance_of(IO).to receive(:tty?).and_return(false)
+      expect(described_class.url("https://brew.sh")).to eq("https://brew.sh")
+    end
+
+    it "returns an OSC 8 hyperlink if a TTY" do
+      allow_any_instance_of(IO).to receive(:tty?).and_return(true)
+      expect(described_class.url("https://brew.sh")).to eq("\033]8;;https://brew.sh\a\033[4mhttps://brew.sh\033[24m\033]8;;\a")
+    end
+  end
+
   describe "::truncate" do
     it "returns the original string if it's shorter than max length" do
       expect(described_class.truncate("short", max: 10)).to eq("short")

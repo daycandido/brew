@@ -4360,6 +4360,10 @@ command execution (e.g. `$(cat file)`).
 : If set, do not use the GitHub API, e.g. for searches or fetching relevant
   issues after a failed install.
 
+`HOMEBREW_NO_HYPERLINKS`
+
+: If set, do not print OSC 8 hyperlink escape sequences.
+
 `HOMEBREW_NO_INSECURE_REDIRECT`
 
 : If set, forbid redirects from secure HTTPS to insecure HTTP.
