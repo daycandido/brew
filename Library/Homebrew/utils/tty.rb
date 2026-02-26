@@ -57,6 +57,8 @@ module Tty
 
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
+      return string.dup unless string.include?("\033")
+
       string.gsub(/\033\[\d+(;\d+)*m/, "")
     end
 
