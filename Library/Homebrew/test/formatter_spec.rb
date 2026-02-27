@@ -124,4 +124,27 @@ RSpec.describe Formatter do
       expect(described_class.truncate("this is a long string", max: 10, omission: " [...]")).to eq("this [...]")
     end
   end
+
+  describe "::url" do
+    it "returns a raw string if $stdout is not a TTY" do
+      allow($stdout).to receive(:tty?).and_return(false)
+      expect(described_class.url("https://brew.sh")).to eq("https://brew.sh")
+    end
+
+    describe "$stdout is a TTY" do
+      before do
+        allow($stdout).to receive(:tty?).and_return(true)
+      end
+
+      it "returns a hyperlinked string" do
+        expect(described_class.url("https://brew.sh"))
+          .to eq("\033]8;;https://brew.sh\033\\\033[4mhttps://brew.sh\033[24m\033]8;;\033\\")
+      end
+
+      it "returns a raw string if HOMEBREW_NO_HYPERLINKS is set" do
+        ENV["HOMEBREW_NO_HYPERLINKS"] = "1"
+        expect(described_class.url("https://brew.sh")).to eq("\033[4mhttps://brew.sh\033[24m")
+      end
+    end
+  end
 end

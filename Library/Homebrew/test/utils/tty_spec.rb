@@ -5,6 +5,10 @@ RSpec.describe Tty do
     it "removes ANSI escape codes from a string" do
       expect(described_class.strip_ansi("\033[36;7mhello\033[0m")).to eq("hello")
     end
+
+    it "removes OSC 8 escape codes from a string" do
+      expect(described_class.strip_ansi("\033]8;;https://brew.sh\033\\Homebrew\033]8;;\033\\")).to eq("Homebrew")
+    end
   end
 
   describe "::width" do
@@ -46,6 +50,10 @@ RSpec.describe Tty do
       expect(described_class.cyan.to_s).to eq("")
       expect(described_class.default.to_s).to eq("")
     end
+
+    it "does not return a hyperlink" do
+      expect(described_class.hyperlink("Homebrew", "https://brew.sh")).to eq("Homebrew")
+    end
   end
 
   context "when $stdout is a TTY" do
@@ -74,6 +82,16 @@ RSpec.describe Tty do
       expect(described_class.magenta.to_s).to eq("")
       expect(described_class.cyan.to_s).to eq("")
       expect(described_class.default.to_s).to eq("")
+    end
+
+    it "returns a hyperlink" do
+      expect(described_class.hyperlink("Homebrew", "https://brew.sh"))
+        .to eq("\033]8;;https://brew.sh\033\\Homebrew\033]8;;\033\\")
+    end
+
+    it "does not return a hyperlink when HOMEBREW_NO_HYPERLINKS is set" do
+      ENV["HOMEBREW_NO_HYPERLINKS"] = "1"
+      expect(described_class.hyperlink("Homebrew", "https://brew.sh")).to eq("Homebrew")
     end
   end
 end
