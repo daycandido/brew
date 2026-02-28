@@ -151,7 +151,8 @@ RSpec.describe "ENV" do
         subject["MY_JWT"] = "jwt_value"
         subject["XAUTHORITY"] = "/path/to/xauth"
         subject["GIT_AUTHOR_NAME"] = "Sentinel"
-        expect(subject.sensitive_environment).to include("SECRET_TOKEN", "HOMEBREW_GITHUB_PACKAGES_AUTH", "MY_JWT", "XAUTHORITY")
+        expect(subject.sensitive_environment).to include("SECRET_TOKEN", "HOMEBREW_GITHUB_PACKAGES_AUTH", "MY_JWT",
+                                                         "XAUTHORITY")
         expect(subject.sensitive_environment).not_to include("GIT_AUTHOR_NAME")
       end
     end
