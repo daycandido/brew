@@ -269,9 +269,7 @@ class SystemCommand
   sig { returns(T::Array[String]) }
   def env_args
     set_variables = env.compact.map do |name, value|
-      sanitized_name = Shellwords.escape(name)
-      sanitized_value = Shellwords.escape(value)
-      "#{sanitized_name}=#{sanitized_value}"
+      "#{name}=#{value}"
     end
 
     return [] if set_variables.empty?

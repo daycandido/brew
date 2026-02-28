@@ -266,6 +266,18 @@ RSpec.describe SystemCommand do
     end
   end
 
+  context "when given an environment variable with special characters" do
+    let(:env) { { "TEST_VAR" => "foo'bar", "TEST_VAR_2" => "hello world" } }
+
+    it "passes the variable correctly without extra escaping" do
+      result = described_class.run("sh", args: ["-c", "echo \"$TEST_VAR\""], env:)
+      expect(result.stdout.chomp).to eq("foo'bar")
+
+      result2 = described_class.run("sh", args: ["-c", "echo \"$TEST_VAR_2\""], env:)
+      expect(result2.stdout.chomp).to eq("hello world")
+    end
+  end
+
   it "looks for executables in a custom PATH" do
     mktmpdir do |path|
       (path/"tool").write <<~SH
