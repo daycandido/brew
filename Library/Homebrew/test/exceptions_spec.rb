@@ -71,7 +71,10 @@ RSpec.describe "Exception" do
     end
 
     context "without a dependent" do
-      it(:to_s) { expect(error.to_s).to match(/^No available formula with the name "foo"\./) }
+      it(:to_s) do
+        escaped_name = Regexp.escape(Formatter.identifier("foo"))
+        expect(error.to_s).to match(/^No available formula with the name #{escaped_name}\./)
+      end
     end
 
     context "with a dependent" do
@@ -80,7 +83,8 @@ RSpec.describe "Exception" do
       end
 
       it(:to_s) do
-        expect(error.to_s).to match(/^No available formula with the name "foo" \(dependency of foobar\)\./)
+        escaped_name = Regexp.escape(Formatter.identifier("foo"))
+        expect(error.to_s).to match(/^No available formula with the name #{escaped_name} \(dependency of foobar\)\./)
       end
     end
   end

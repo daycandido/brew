@@ -112,7 +112,7 @@ class FormulaOrCaskUnavailableError < RuntimeError
 
   sig { returns(String) }
   def to_s
-    s = "No available formula or cask with the name \"#{name}\". #{did_you_mean}".strip
+    s = "No available formula or cask with the name #{Formatter.identifier(name)}. #{did_you_mean}".strip
     if @auto_without_api && !CoreTap.instance.installed?
       s += "\nA full git tap clone is required to use this command on core packages."
     end
@@ -150,7 +150,7 @@ class FormulaUnavailableError < FormulaOrCaskUnavailableError
 
   sig { returns(String) }
   def to_s
-    "No available formula with the name \"#{name}\"#{dependent_s}. #{did_you_mean}".strip
+    "No available formula with the name #{Formatter.identifier(name)}#{dependent_s}. #{did_you_mean}".strip
   end
 end
 
