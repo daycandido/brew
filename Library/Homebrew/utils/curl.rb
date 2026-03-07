@@ -143,6 +143,14 @@ module Utils
 
       args << "--referer" << referer if referer.present?
 
+      if extra_args.exclude?("--version") && extra_args.exclude?("-V") &&
+         curl_version >= Version.new("7.20.0")
+        # Restrict redirect protocols to safe ones.
+        # This acts as a security hardening to prevent redirection to file://, scp://, etc.
+        # This flag was added in curl 7.20.0 (February 2010).
+        args << "--proto-redir" << "-all,https,http,ftp,ftps"
+      end
+
       (args + extra_args).map(&:to_s)
     end
 
