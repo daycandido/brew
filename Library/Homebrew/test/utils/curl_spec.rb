@@ -520,6 +520,23 @@ RSpec.describe "Utils::Curl" do
         end
       end
     end
+
+    context "when checking protocol redirects" do
+      it "adds `--proto-redir` if curl version supports it" do
+        allow(self).to receive(:curl_version).and_return(Version.new("7.85.0"))
+        expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http")
+      end
+
+      it "does not add `--proto-redir` if curl version does not support it" do
+        allow(self).to receive(:curl_version).and_return(Version.new("7.84.0"))
+        expect(curl_args(*args).join(" ")).not_to include("--proto-redir")
+      end
+
+      it "does not add `--proto-redir` if `check_proto_redir` is false" do
+        allow(self).to receive(:curl_version).and_return(Version.new("7.85.0"))
+        expect(curl_args(*args, check_proto_redir: false).join(" ")).not_to include("--proto-redir")
+      end
+    end
   end
 
   describe "::url_protected_by_cloudflare?" do
