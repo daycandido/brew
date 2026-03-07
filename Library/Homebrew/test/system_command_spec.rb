@@ -39,6 +39,26 @@ RSpec.describe SystemCommand do
       end
     end
 
+    context "when given environment variables with spaces" do
+      let(:env) { { "SPACE" => "foo bar" } }
+      let(:env_args) { ["bash", "-c", 'echo "$SPACE"'] }
+
+      describe "the resulting command line" do
+        it "does not escape the space in the argument" do
+          expect(command)
+            .to receive(:exec3)
+            .with(
+              an_instance_of(Hash), "/usr/bin/env", "SPACE=foo bar",
+              "env", *env_args,
+              pgroup: true
+            )
+            .and_call_original
+
+          command.run!
+        end
+      end
+    end
+
     context "when given an environment variable which is set to nil" do
       let(:env) { { "A" => "1", "B" => "2", "C" => nil } }
 
