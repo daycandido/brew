@@ -248,6 +248,9 @@ module Homebrew::EnvConfig
     def no_github_api?; end
 
     sig { returns(T::Boolean) }
+    def no_hyperlinks?; end
+
+    sig { returns(T::Boolean) }
     def no_insecure_redirect?; end
 
     sig { returns(T::Boolean) }
