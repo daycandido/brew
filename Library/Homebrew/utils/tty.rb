@@ -61,6 +61,14 @@ module Tty
       return string.dup unless string.include?("\033")
 
       string.gsub(/\033\[\d+(;\d+)*m/, "")
+            .gsub(/\033\]8;.*?(?:\033\\|\a)/, "")
+    end
+
+    sig { params(string: String, url: String).returns(String) }
+    def hyperlink(string, url)
+      return string if !color? || ENV["HOMEBREW_NO_HYPERLINKS"]
+
+      "\033]8;;#{url}\033\\#{string}\033]8;;\033\\"
     end
 
     sig { params(line_count: Integer).returns(String) }
