@@ -123,6 +123,14 @@ module Tty
       (w = width).zero? ? string.to_s : (string.to_s[0, w - 4] || "")
     end
 
+    sig { params(text: String, url: String).returns(String) }
+    def hyperlink(text, url)
+      return text unless color?
+      return text if Homebrew::EnvConfig.no_hyperlinks?
+
+      "\033]8;;#{url}\033\\#{text}\033]8;;\033\\"
+    end
+
     sig { returns(String) }
     def current_escape_sequence
       return "" if @escape_sequence.nil?
