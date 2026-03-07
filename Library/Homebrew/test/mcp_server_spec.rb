@@ -168,6 +168,50 @@ RSpec.describe Homebrew::McpServer do
       request = { "method" => "initialize" }
       expect(server.handle_request(request)).to be_nil
     end
+
+    context "when calling tools with special characters" do
+      it "does not double-escape arguments for search" do
+        regex = "foo|bar"
+        expect(Open3).to receive(:popen2e) do |_, brew_cmd, *args, &block|
+          expect(brew_cmd).to eq("search")
+          expect(args).to include(regex)
+          block.call(StringIO.new, StringIO.new, nil)
+          "output"
+        end
+
+        request = {
+          "id"     => id,
+          "method" => "tools/call",
+          "params" => {
+            "name"      => "search",
+            "arguments" => { "text_or_regex" => regex },
+          },
+        }
+
+        server.handle_request(request)
+      end
+
+      it "does not double-escape arguments for install" do
+        formula = "foo"
+        expect(Open3).to receive(:popen2e) do |_, brew_cmd, *args, &block|
+          expect(brew_cmd).to eq("install")
+          expect(args).to include(formula)
+          block.call(StringIO.new, StringIO.new, nil)
+          "output"
+        end
+
+        request = {
+          "id"     => id,
+          "method" => "tools/call",
+          "params" => {
+            "name"      => "install",
+            "arguments" => { "formula_or_cask" => formula },
+          },
+        }
+
+        server.handle_request(request)
+      end
+    end
   end
 
   describe "#respond_result" do
