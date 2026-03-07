@@ -479,7 +479,9 @@ module Homebrew
         end
         return if all_formulae.any? || all_casks.any?
 
-        odie "No #{package_types.join(" or ")} found for #{name}."
+        ofail "No #{package_types.join(" or ")} found for #{name}."
+        puts "To search for it, check #{Formatter.url("https://formulae.brew.sh/")}"
+        exit 1
       end
     end
   end
