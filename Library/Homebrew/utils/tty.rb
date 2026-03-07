@@ -154,6 +154,16 @@ module Tty
       end
     end
 
+    sig { params(text: String, url: String).returns(String) }
+    def hyperlink(text, url)
+      require "env_config"
+
+      return text if Homebrew::EnvConfig.no_hyperlinks?
+      return text unless color?
+
+      "\033]8;;#{url}\033\\#{text}\033]8;;\033\\"
+    end
+
     sig { returns(String) }
     def to_s
       return "" unless color?

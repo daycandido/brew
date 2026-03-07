@@ -7,6 +7,41 @@ RSpec.describe Tty do
     end
   end
 
+  describe "::hyperlink" do
+    let(:text) { "hello" }
+    let(:url) { "https://example.com" }
+
+    context "when $stdout is not a TTY" do
+      before do
+        allow($stdout).to receive(:tty?).and_return(false)
+      end
+
+      it "returns the text without hyperlink" do
+        expect(described_class.hyperlink(text, url)).to eq(text)
+      end
+    end
+
+    context "when $stdout is a TTY" do
+      before do
+        allow($stdout).to receive(:tty?).and_return(true)
+      end
+
+      it "returns the text with hyperlink escape codes" do
+        expect(described_class.hyperlink(text, url)).to eq("\033]8;;#{url}\033\\#{text}\033]8;;\033\\")
+      end
+
+      it "returns the text without hyperlink when HOMEBREW_NO_HYPERLINKS is set" do
+        ENV["HOMEBREW_NO_HYPERLINKS"] = "1"
+        expect(described_class.hyperlink(text, url)).to eq(text)
+      end
+
+      it "returns the text without hyperlink when HOMEBREW_NO_COLOR is set" do
+        ENV["HOMEBREW_NO_COLOR"] = "1"
+        expect(described_class.hyperlink(text, url)).to eq(text)
+      end
+    end
+  end
+
   describe "::width" do
     it "returns an Integer" do
       expect(described_class.width).to be_a(Integer)
