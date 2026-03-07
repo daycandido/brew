@@ -106,6 +106,11 @@ module Utils
         args << "--disable"
       end
 
+      if extra_args.exclude?("-V") && extra_args.exclude?("--version") &&
+         curl_version >= Version.new("7.20.0")
+        args << "--proto-redir" << "-all,https,http,ftp,ftps"
+      end
+
       # echo any cookies received on a redirect
       args << "--cookie" << File::NULL
 
