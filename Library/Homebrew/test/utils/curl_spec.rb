@@ -372,6 +372,16 @@ RSpec.describe "Utils::Curl" do
       ENV["HOMEBREW_CURLRC"] = nil
     end
 
+    it "uses `--proto-redir` with safe protocols if curl version is new enough" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.85.0"))
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http,ftp,ftps")
+    end
+
+    it "does not use `--proto-redir` if curl version is too old" do
+      allow(self).to receive(:curl_version).and_return(Version.new("7.84.0"))
+      expect(curl_args(*args).join(" ")).not_to include("--proto-redir")
+    end
+
     it "uses `--connect-timeout` when `:connect_timeout` is Numeric" do
       expect(curl_args(*args, connect_timeout: 123).join(" ")).to include("--connect-timeout 123")
       expect(curl_args(*args, connect_timeout: 123.4).join(" ")).to include("--connect-timeout 123.4")

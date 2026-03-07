@@ -111,6 +111,12 @@ module Utils
 
       args << "--globoff"
 
+      # --proto-redir was added in curl 7.85.0
+      if extra_args.exclude?("-V") && extra_args.exclude?("--version") &&
+         curl_version >= Version.new("7.85.0")
+        args << "--proto-redir" << "-all,https,http,ftp,ftps"
+      end
+
       args << "--show-error" if show_error
 
       args << "--user-agent" << case user_agent
