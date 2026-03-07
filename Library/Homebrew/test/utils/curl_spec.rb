@@ -429,6 +429,10 @@ RSpec.describe "Utils::Curl" do
       expect(curl_args(*args, show_error: false)).not_to include("--show-error")
     end
 
+    it "uses `--proto-redir` to restrict redirects to HTTP/HTTPS" do
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http")
+    end
+
     it "uses `--referer` when :referer is present" do
       expect(curl_args(*args, referer: "https://brew.sh").join(" ")).to include("--referer https://brew.sh")
     end

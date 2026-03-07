@@ -111,6 +111,8 @@ module Utils
 
       args << "--globoff"
 
+      args << "--proto-redir" << "-all,https,http"
+
       args << "--show-error" if show_error
 
       args << "--user-agent" << case user_agent
