@@ -143,6 +143,12 @@ module Utils
 
       args << "--referer" << referer if referer.present?
 
+      # User-provided `extra_args` may start with `-` or not.
+      # We check if `extra_args` contains version request to avoid recursion.
+      if (extra_args & ["-V", "--version"]).empty? && curl_version >= Version.new("7.20.0")
+        args << "--proto-redir" << "-all,https,http,ftp,ftps"
+      end
+
       (args + extra_args).map(&:to_s)
     end
 
