@@ -124,4 +124,23 @@ RSpec.describe Formatter do
       expect(described_class.truncate("this is a long string", max: 10, omission: " [...]")).to eq("this [...]")
     end
   end
+
+  describe "::url" do
+    before do
+      allow($stdout).to receive(:tty?).and_return(true)
+      allow(Homebrew::EnvConfig).to receive(:no_color?).and_return(false)
+    end
+
+    it "formats URL with underline and hyperlink" do
+      expect(described_class.url("https://brew.sh")).to eq(
+        "\033]8;;https://brew.sh\033\\\033[4mhttps://brew.sh\033[24m\033]8;;\033\\",
+      )
+    end
+
+    it "formats URL with underline only if hyperlinks disabled" do
+      ENV["HOMEBREW_NO_HYPERLINKS"] = "1"
+      expect(described_class.url("https://brew.sh")).to eq("\033[4mhttps://brew.sh\033[24m")
+      ENV.delete("HOMEBREW_NO_HYPERLINKS")
+    end
+  end
 end
