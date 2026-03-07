@@ -143,6 +143,12 @@ module Utils
 
       args << "--referer" << referer if referer.present?
 
+      if extra_args.exclude?("-V") && extra_args.exclude?("--version") &&
+         curl_version >= Version.new("7.20.0")
+        # Added in curl 7.20.0 (February 2010).
+        args << "--proto-redir" << "-all,https,http,ftp,ftps"
+      end
+
       (args + extra_args).map(&:to_s)
     end
 
