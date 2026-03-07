@@ -520,6 +520,21 @@ RSpec.describe "Utils::Curl" do
         end
       end
     end
+
+    it "uses `--proto-redir` when supported" do
+      allow_any_instance_of(Utils::Curl).to receive(:curl_supports_proto_redir?).and_return(true)
+      expect(curl_args(*args).join(" ")).to include("--proto-redir -all,https,http")
+    end
+
+    it "doesn't use `--proto-redir` when not supported" do
+      allow_any_instance_of(Utils::Curl).to receive(:curl_supports_proto_redir?).and_return(false)
+      expect(curl_args(*args).join(" ")).not_to include("--proto-redir")
+    end
+
+    it "doesn't use `--proto-redir` when `check_proto_redir` is `false`" do
+      allow_any_instance_of(Utils::Curl).to receive(:curl_supports_proto_redir?).and_return(true)
+      expect(curl_args(*args, check_proto_redir: false).join(" ")).not_to include("--proto-redir")
+    end
   end
 
   describe "::url_protected_by_cloudflare?" do
@@ -592,6 +607,21 @@ RSpec.describe "Utils::Curl" do
     it "returns `false` if curl command is not successful" do
       allow_any_instance_of(Kernel).to receive(:quiet_system).and_return(false)
       expect(curl_supports_tls13?).to be(false)
+    end
+  end
+
+  describe "::curl_supports_proto_redir?" do
+    it "returns `true` if curl version is 7.85.0 or higher" do
+      allow_any_instance_of(Utils::Curl).to receive(:curl_version).and_return(Version.new("7.85.0"))
+      expect(curl_supports_proto_redir?).to be(true)
+
+      allow_any_instance_of(Utils::Curl).to receive(:curl_version).and_return(Version.new("7.86.0"))
+      expect(curl_supports_proto_redir?).to be(true)
+    end
+
+    it "returns `false` if curl version is lower than 7.85.0" do
+      allow_any_instance_of(Utils::Curl).to receive(:curl_version).and_return(Version.new("7.84.0"))
+      expect(curl_supports_proto_redir?).to be(false)
     end
   end
 

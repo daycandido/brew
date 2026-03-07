@@ -79,6 +79,7 @@ module Utils
         show_error:      T.nilable(T::Boolean),
         user_agent:      T.any(String, Symbol, NilClass),
         referer:         T.nilable(String),
+        check_proto_redir: T.nilable(T::Boolean),
       ).returns(T::Array[String])
     }
     def curl_args(
@@ -90,7 +91,8 @@ module Utils
       show_output: false,
       show_error: true,
       user_agent: nil,
-      referer: nil
+      referer: nil,
+      check_proto_redir: true
     )
       args = []
 
@@ -140,6 +142,8 @@ module Utils
       args << "--retry" << retries if retries&.positive?
 
       args << "--retry-max-time" << retry_max_time.round if retry_max_time.present?
+
+      args << "--proto-redir" << "-all,https,http" if check_proto_redir && curl_supports_proto_redir?
 
       args << "--referer" << referer if referer.present?
 
@@ -582,7 +586,7 @@ module Utils
     sig { returns(Version) }
     def curl_version
       @curl_version ||= T.let({}, T.nilable(T::Hash[String, Version]))
-      @curl_version[curl_path] ||= Version.new(T.must(curl_output("-V").stdout[/curl (\d+(\.\d+)+)/, 1]))
+      @curl_version[curl_path] ||= Version.new(T.must(curl_output("-V", check_proto_redir: false).stdout[/curl (\d+(\.\d+)+)/, 1]))
     end
 
     sig { returns(T::Boolean) }
@@ -599,6 +603,14 @@ module Utils
         h[key] = quiet_system(curl_executable, "--tlsv1.3", "--head", "https://brew.sh/")
       end, T.nilable(T::Hash[T.any(Pathname, String), T::Boolean]))
       @curl_supports_tls13[curl_path]
+    end
+
+    sig { returns(T::Boolean) }
+    def curl_supports_proto_redir?
+      @curl_supports_proto_redir ||= T.let(Hash.new do |h, key|
+        h[key] = curl_version >= Version.new("7.85.0")
+      end, T.nilable(T::Hash[T.any(Pathname, String), T::Boolean]))
+      @curl_supports_proto_redir[curl_path]
     end
 
     sig { params(status: T.nilable(String)).returns(T::Boolean) }
