@@ -323,7 +323,7 @@ module Cask
           current_version:    version,
         }
       else
-        "#{Formatter.identifier(token)} (#{Tty.red}#{installed_version}#{Tty.reset}) != #{Tty.green}#{version}#{Tty.reset}"
+        "#{token} (#{installed_version}) != #{version}"
       end
     end
 
