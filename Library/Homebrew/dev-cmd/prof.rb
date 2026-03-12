@@ -46,7 +46,7 @@ module Homebrew
             system(*HOMEBREW_RUBY_EXEC_ARGS, brew_rb, *args.named)
           end
           output_filename = "prof/d3-flamegraph.html"
-          safe_system "stackprof --d3-flamegraph prof/stackprof.dump > #{output_filename}"
+          safe_system "stackprof", "--d3-flamegraph", "prof/stackprof.dump", out: output_filename
           exec_browser output_filename
         elsif args.vernier?
           output_filename = "prof/vernier.json"
