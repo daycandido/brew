@@ -55,6 +55,14 @@ module Tty
       @stream = T.let(previous_stream, T.nilable(T.any(IO, StringIO)))
     end
 
+    sig { params(string: String).returns(Integer) }
+    def strip_ansi_length(string)
+      # Optimization: Fast path if no ANSI escape codes are present
+      return string.length unless string.include?("\033")
+
+      string.length - string.scan(/\033\[\d+(?:;\d+)*m/).sum(&:length)
+    end
+
     sig { params(string: String).returns(String) }
     def strip_ansi(string)
       # Optimization: Skip regex if no ANSI escape codes are present
