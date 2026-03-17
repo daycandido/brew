@@ -7,6 +7,13 @@ RSpec.describe Tty do
     end
   end
 
+  describe "::strip_ansi_length" do
+    it "calculates the length of a string without ANSI escape codes" do
+      expect(described_class.strip_ansi_length("\033[36;7mhello\033[0m")).to eq(5)
+      expect(described_class.strip_ansi_length("hello")).to eq(5)
+    end
+  end
+
   describe "::width" do
     it "returns an Integer" do
       expect(described_class.width).to be_a(Integer)
