@@ -163,7 +163,10 @@ module Cask
       caught_exceptions = []
 
       puts upgradable_casks
-        .map { |(old_cask, new_cask)| "#{new_cask.full_name} #{old_cask.version} -> #{new_cask.version}" }
+        .map do |(old_cask, new_cask)|
+        "#{new_cask.full_name} #{Tty.red}#{old_cask.version}#{Tty.reset} " \
+          "-> #{Tty.green}#{new_cask.version}#{Tty.reset}"
+      end
         .join("\n")
       return true if dry_run
 
