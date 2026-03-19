@@ -136,7 +136,8 @@ module Homebrew
       sig { params(formula: Formula, fi_options: Options).void }
       def print_upgrade_message(formula, fi_options)
         version_upgrade = if formula.optlinked?
-          "#{Keg.new(formula.opt_prefix).version} -> #{formula.pkg_version}"
+          "#{Tty.red}#{Keg.new(formula.opt_prefix).version}#{Tty.reset} " \
+            "-> #{Tty.green}#{formula.pkg_version}#{Tty.reset}"
         else
           "-> #{formula.pkg_version}"
         end
@@ -257,7 +258,8 @@ module Homebrew
           formulae_upgrades = upgradeable.map do |f|
             name = f.full_specified_name
             if f.optlinked?
-              "#{name} #{Keg.new(f.opt_prefix).version} -> #{f.pkg_version}"
+              "#{name} #{Tty.red}#{Keg.new(f.opt_prefix).version}#{Tty.reset} " \
+                "-> #{Tty.green}#{f.pkg_version}#{Tty.reset}"
             else
               "#{name} #{f.pkg_version}"
             end
@@ -382,7 +384,8 @@ module Homebrew
           Install.print_dry_run_dependencies(formula, formula_installer.compute_dependencies) do |f|
             name = f.full_specified_name
             if f.optlinked?
-              "#{name} #{Keg.new(f.opt_prefix).version} -> #{f.pkg_version}"
+              "#{name} #{Tty.red}#{Keg.new(f.opt_prefix).version}#{Tty.reset} " \
+                "-> #{Tty.green}#{f.pkg_version}#{Tty.reset}"
             else
               "#{name} #{f.pkg_version}"
             end

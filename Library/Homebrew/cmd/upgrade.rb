@@ -217,7 +217,8 @@ module Homebrew
                                                                                formulae_to_install.count)}:"
           formulae_upgrades = formulae_to_install.map do |f|
             if f.optlinked?
-              "#{f.full_specified_name} #{Keg.new(f.opt_prefix).version} -> #{f.pkg_version}"
+              "#{f.full_specified_name} #{Tty.red}#{Keg.new(f.opt_prefix).version}#{Tty.reset} " \
+                "-> #{Tty.green}#{f.pkg_version}#{Tty.reset}"
             else
               "#{f.full_specified_name} #{f.pkg_version}"
             end
