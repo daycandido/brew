@@ -190,15 +190,16 @@ module Kernel
   def ensure_executable!(name, formula_name = nil, reason: "", latest: false)
     formula_name ||= name
 
-    executable = [
-      which(name),
-      which(name, ORIGINAL_PATHS),
-      # We prefer the opt_bin path to a formula's executable over the prefix
-      # path where available, since the former is stable during upgrades.
-      HOMEBREW_PREFIX/"opt/#{formula_name}/bin/#{name}",
-      HOMEBREW_PREFIX/"bin/#{name}",
-    ].compact.first
-    return executable if executable.exist?
+    executable = which(name) || which(name, ORIGINAL_PATHS)
+    return executable if executable
+
+    # We prefer the opt_bin path to a formula's executable over the prefix
+    # path where available, since the former is stable during upgrades.
+    opt_bin = HOMEBREW_PREFIX/"opt/#{formula_name}/bin/#{name}"
+    return opt_bin if opt_bin.exist?
+
+    bin = HOMEBREW_PREFIX/"bin/#{name}"
+    return bin if bin.exist?
 
     require "formula"
     Formula[formula_name].ensure_installed!(reason:, latest:).opt_bin/name
