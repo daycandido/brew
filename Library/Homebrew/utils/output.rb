@@ -228,7 +228,7 @@ module Utils
         if !$stdout.tty?
           string
         elsif Homebrew::EnvConfig.no_emoji?
-          Formatter.error("#{Tty.bold}#{string} (outdated)#{Tty.reset}")
+          Formatter.warning("#{Tty.bold}#{string} (outdated)#{Tty.reset}")
         else
           "#{Tty.bold}#{string} #{Formatter.warning("⚠")}#{Tty.reset}"
         end
