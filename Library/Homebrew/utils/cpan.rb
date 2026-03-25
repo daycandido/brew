@@ -135,7 +135,10 @@ module CPAN
       current_version = package.current_version
 
       if current_version && new_version && current_version != new_version
-        ohai "\"#{resource.name}\": #{current_version} -> #{new_version}" if show_info
+        if show_info
+          ohai "\"#{resource.name}\": #{Tty.red}#{current_version}#{Tty.reset} -> " \
+               "#{Tty.green}#{new_version}#{Tty.reset}"
+        end
         updated_count += 1
       elsif show_info
         ohai "\"#{resource.name}\": already up to date (#{current_version})" if current_version
