@@ -71,6 +71,38 @@ RSpec.describe Utils::Output do
     end
   end
 
+  describe "#pretty_outdated" do
+    subject(:pretty_outdated_output) { described_class.pretty_outdated("foo") }
+
+    context "when $stdout is a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(true) }
+
+      context "with HOMEBREW_NO_EMOJI unset" do
+        it "returns a string with a colored checkmark" do
+          expect(pretty_outdated_output)
+            .to match(/#{esc 1}foo #{esc 33}\342\232\240#{esc 0}/)
+        end
+      end
+
+      context "with HOMEBREW_NO_EMOJI set" do
+        before { ENV["HOMEBREW_NO_EMOJI"] = "1" }
+
+        it "returns a string with colored info" do
+          expect(pretty_outdated_output)
+            .to match(/#{esc 1}foo \(outdated\)#{esc 0}/)
+        end
+      end
+    end
+
+    context "when $stdout is not a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(false) }
+
+      it "returns plain text" do
+        expect(pretty_outdated_output).to eq("foo")
+      end
+    end
+  end
+
   describe "#pretty_duration" do
     it "converts seconds to a human-readable string" do
       expect(described_class.pretty_duration(1)).to eq("1 second")
