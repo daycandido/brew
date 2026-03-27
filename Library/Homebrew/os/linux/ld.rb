@@ -60,7 +60,8 @@ module OS
         match = ld_so_diagnostics(brewed:).match(/path.sysconfdir="(.+)"/)
         return fallback_sysconfdir unless match
 
-        match.captures.compact.first || fallback_sysconfdir
+        # Performance: Use match[1] directly instead of match.captures.compact.first
+        match[1] || fallback_sysconfdir
       end
 
       sig { params(brewed: T::Boolean).returns(T::Array[String]) }
@@ -71,7 +72,8 @@ module OS
           match = line.match(/path.system_dirs\[0x.*\]="(.*)"/)
           next unless match
 
-          dirs << match.captures.compact.first
+          # Performance: Use match[1] directly instead of match.captures.compact.first
+          dirs << match[1]
         end
 
         dirs
