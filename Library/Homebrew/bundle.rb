@@ -41,32 +41,46 @@ module Homebrew
 
       sig { returns(T::Boolean) }
       def mas_installed?
-        @mas_installed ||= which_formula?("mas")
+        return T.must(@mas_installed) if defined?(@mas_installed)
+
+        @mas_installed = T.let(which_formula?("mas"), T.nilable(T::Boolean))
+        T.must(@mas_installed)
       end
 
       sig { returns(T::Boolean) }
       def vscode_installed?
-        @vscode_installed ||= which_vscode.present?
+        return T.must(@vscode_installed) if defined?(@vscode_installed)
+
+        @vscode_installed = T.let(which_vscode.present?, T.nilable(T::Boolean))
+        T.must(@vscode_installed)
       end
 
       sig { returns(T.nilable(Pathname)) }
       def which_vscode
-        @which_vscode ||= which("code", ORIGINAL_PATHS)
-        @which_vscode ||= which("codium", ORIGINAL_PATHS)
-        @which_vscode ||= which("cursor", ORIGINAL_PATHS)
-        @which_vscode ||= which("code-insiders", ORIGINAL_PATHS)
+        return @which_vscode if defined?(@which_vscode)
+
+        @which_vscode = T.let(which("code", ORIGINAL_PATHS) ||
+                              which("codium", ORIGINAL_PATHS) ||
+                              which("cursor", ORIGINAL_PATHS) ||
+                              which("code-insiders", ORIGINAL_PATHS), T.nilable(Pathname))
       end
 
       sig { returns(T::Boolean) }
       def whalebrew_installed?
-        @whalebrew_installed ||= which_formula?("whalebrew")
+        return T.must(@whalebrew_installed) if defined?(@whalebrew_installed)
+
+        @whalebrew_installed = T.let(which_formula?("whalebrew"), T.nilable(T::Boolean))
+        T.must(@whalebrew_installed)
       end
 
       sig { returns(T::Boolean) }
       def cask_installed?
-        @cask_installed ||= File.directory?("#{HOMEBREW_PREFIX}/Caskroom") &&
-                            (File.directory?("#{HOMEBREW_LIBRARY}/Taps/homebrew/homebrew-cask") ||
-                             !Homebrew::EnvConfig.no_install_from_api?)
+        return T.must(@cask_installed) if defined?(@cask_installed)
+
+        @cask_installed = T.let(File.directory?("#{HOMEBREW_PREFIX}/Caskroom") &&
+                                (File.directory?("#{HOMEBREW_LIBRARY}/Taps/homebrew/homebrew-cask") ||
+                                 !Homebrew::EnvConfig.no_install_from_api?), T.nilable(T::Boolean))
+        T.must(@cask_installed)
       end
 
       sig { params(name: String).returns(T::Boolean) }
