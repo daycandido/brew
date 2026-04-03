@@ -112,7 +112,8 @@ module Homebrew
 
               pinned_version = " [pinned at #{f.pinned_version}]" if f.pinned?
 
-              puts "#{outdated_versions} < #{current_version}#{pinned_version}"
+              puts "#{Tty.red}#{outdated_versions}#{Tty.reset} < " \
+                   "#{Tty.green}#{current_version}#{Tty.reset}#{pinned_version}"
             else
               puts f.full_installed_specified_name
             end
