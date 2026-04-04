@@ -7,9 +7,12 @@ module Homebrew
   module Bundle
     module Commands
       module Add
-        sig { params(args: String, type: Symbol, global: T::Boolean, file: T.nilable(String)).void }
-        def self.run(*args, type:, global:, file:)
-          Homebrew::Bundle::Adder.add(*args, type:, global:, file:)
+        sig {
+          params(args: String, type: Symbol, global: T::Boolean, file: T.nilable(String),
+                 describe: T::Boolean).void
+        }
+        def self.run(*args, type:, global:, file:, describe: false)
+          Homebrew::Bundle::Adder.add(*args, type:, global:, file:, describe:)
         end
       end
     end

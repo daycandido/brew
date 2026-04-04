@@ -4,6 +4,7 @@
 require "abstract_command"
 require "erb"
 require "fileutils"
+require "system_command"
 require "tap"
 require "utils/uid"
 
@@ -11,6 +12,7 @@ module Homebrew
   module DevCmd
     class TapNew < AbstractCommand
       include FileUtils
+      include SystemCommand::Mixin
 
       cmd_args do
         usage_banner "`tap-new` [<options>] <user>`/`<repo>"
@@ -83,8 +85,12 @@ module Homebrew
             test-bot:
               strategy:
                 matrix:
-                  os: [ ubuntu-22.04, macos-15-intel, macos-26 ]
+                  os: [ macos-15-intel, macos-26 ]
+                  include:
+                    - os: ubuntu-latest
+                      container: ghcr.io/homebrew/brew:main
               runs-on: ${{ matrix.os }}
+              container: ${{ matrix.container }}
               permissions:
                 actions: read
                 checks: read
@@ -149,7 +155,7 @@ module Homebrew
           jobs:
             pr-pull:
               if: contains(github.event.pull_request.labels.*.name, '<%= label %>')
-              runs-on: ubuntu-22.04
+              runs-on: ubuntu-latest
               permissions:
                 actions: read
                 checks: read
@@ -212,15 +218,14 @@ module Homebrew
             end
 
             # Use the configuration of the original user, which will have author information and signing keys.
-            Utils::UID.drop_euid do
-              env = { HOME: Utils::UID.uid_home }.compact
-              env[:TMPDIR] = nil if (tmpdir = ENV.fetch("TMPDIR", nil)) && !File.writable?(tmpdir)
-              with_env(env) do
-                safe_system "git", *args, "add", "--all"
-                safe_system "git", *args, "commit", "-m", "Create #{tap} tap"
-                safe_system "git", *args, "branch", "-m", branch
-              end
-            end
+            env = { "HOME" => Utils::UID.uid_home }.compact
+            env["TMPDIR"] = nil if (tmpdir = ENV.fetch("TMPDIR", nil)) && !File.writable?(tmpdir)
+            system_command!("git", args: [*args, "add", "--all"], env:,
+                            print_stdout: true, run_as_real_uid: true)
+            system_command!("git", args: [*args, "commit", "-m", "Create #{tap} tap"], env:,
+                            print_stdout: true, run_as_real_uid: true)
+            system_command!("git", args: [*args, "branch", "-m", branch], env:,
+                            print_stdout: true, run_as_real_uid: true)
           end
         end
 

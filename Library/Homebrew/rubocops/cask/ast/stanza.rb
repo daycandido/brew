@@ -14,16 +14,16 @@ module RuboCop
 
         sig {
           params(
-            method_node:  RuboCop::AST::Node,
+            method_node:  T.any(RuboCop::AST::AsgnNode, RuboCop::AST::BlockNode, RuboCop::AST::SendNode),
             all_comments: T::Array[T.any(String, Parser::Source::Comment)],
           ).void
         }
         def initialize(method_node, all_comments)
-          @method_node = T.let(method_node, RuboCop::AST::Node)
-          @all_comments = T.let(all_comments, T::Array[T.any(String, Parser::Source::Comment)])
+          @method_node = method_node
+          @all_comments = all_comments
         end
 
-        sig { returns(RuboCop::AST::Node) }
+        sig { returns(T.any(RuboCop::AST::AsgnNode, RuboCop::AST::BlockNode, RuboCop::AST::SendNode)) }
         attr_reader :method_node
         alias stanza_node method_node
 

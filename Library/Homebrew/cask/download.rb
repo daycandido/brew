@@ -67,7 +67,7 @@ module Cask
       downloaded_path
     end
 
-    sig { params(timeout: T.any(Float, Integer, NilClass)).returns([T.nilable(Time), Integer]) }
+    sig { params(timeout: T.nilable(T.any(Float, Integer))).returns([T.nilable(Time), Integer]) }
     def time_file_size(timeout: nil)
       raise ArgumentError, "not supported for this download strategy" unless downloader.is_a?(CurlDownloadStrategy)
 

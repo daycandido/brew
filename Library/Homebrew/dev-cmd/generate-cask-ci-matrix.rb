@@ -17,7 +17,7 @@ module Homebrew
         { symbol: :sequoia, name: "macos-15-intel", arch: :intel } => 1.0,
       }.freeze, T::Hash[T::Hash[Symbol, T.any(Symbol, String)], Float])
       X86_LINUX_RUNNERS = T.let({
-        { symbol: :linux, name: "ubuntu-22.04", arch: :intel } => 1.0,
+        { symbol: :linux, name: "ubuntu-latest", arch: :intel } => 1.0,
       }.freeze, T::Hash[T::Hash[Symbol, T.any(Symbol, String)], Float])
       ARM_MACOS_RUNNERS = T.let({
         { symbol: :sonoma,  name: "macos-14", arch: :arm } => 0.0,
@@ -25,7 +25,7 @@ module Homebrew
         { symbol: :tahoe,   name: "macos-26", arch: :arm } => 1.0,
       }.freeze, T::Hash[T::Hash[Symbol, T.any(Symbol, String)], Float])
       ARM_LINUX_RUNNERS = T.let({
-        { symbol: :linux, name: "ubuntu-22.04-arm", arch: :arm } => 1.0,
+        { symbol: :linux, name: OS::LINUX_CI_ARM_RUNNER, arch: :arm } => 1.0,
       }.freeze, T::Hash[T::Hash[Symbol, T.any(Symbol, String)], Float])
       MACOS_RUNNERS = T.let(X86_MACOS_RUNNERS.merge(ARM_MACOS_RUNNERS).freeze,
                             T::Hash[T::Hash[Symbol, T.any(Symbol, String)], Float])
@@ -139,21 +139,43 @@ module Homebrew
           RUNNERS.dup
         end
 
-        filtered_runners = filtered_runners.merge(LINUX_RUNNERS) if cask.supports_linux?
-
-        archs = architectures(cask:)
+        macos_archs = architectures(cask:, os: :macos)
         filtered_runners.select! do |runner, _|
-          archs.include?(runner.fetch(:arch))
+          macos_archs.include?(runner.fetch(:arch))
         end
 
-        filtered_runners
+        return filtered_runners unless cask.supports_linux?
+
+        linux_archs = architectures(cask:, os: :linux)
+        linux_runners = LINUX_RUNNERS.select do |runner, _|
+          linux_archs.include?(runner.fetch(:arch))
+        end
+
+        filtered_runners.merge(linux_runners)
       end
 
-      sig { params(cask: Cask::Cask).returns(T::Array[Symbol]) }
-      def architectures(cask:)
-        return RUNNERS.keys.map { |r| r.fetch(:arch).to_sym }.uniq.sort if cask.depends_on.arch.blank?
+      private
 
-        cask.depends_on.arch.map { |arch| arch[:type] }.uniq.sort
+      sig { params(cask: Cask::Cask, os: Symbol).returns(T::Array[Symbol]) }
+      def architectures(cask:, os:)
+        architectures = T.let([], T::Array[Symbol])
+        [:arm, :intel].each do |arch|
+          tag = Utils::Bottles::Tag.new(system: os, arch: arch)
+          Homebrew::SimulateSystem.with_tag(tag) do
+            cask.refresh
+
+            if cask.depends_on.arch.blank?
+              architectures = RUNNERS.keys.map { |r| r.fetch(:arch).to_sym }.uniq.sort
+              next
+            end
+
+            architectures = cask.depends_on.arch.map { |arch| arch[:type] }
+          end
+        rescue ::Cask::CaskInvalidError
+          # Can't read cask for this system-arch combination.
+        end
+
+        architectures
       end
 
       sig {
@@ -241,6 +263,7 @@ module Homebrew
           if labels.include?("ci-skip-repository")
             audit_exceptions << %w[github_repository github_prerelease_version
                                    gitlab_repository gitlab_prerelease_version
+                                   forgejo_repository forgejo_prerelease_version
                                    bitbucket_repository]
           end
 
@@ -251,11 +274,11 @@ module Homebrew
           cask = Cask::CaskLoader.load(path.expand_path)
 
           runners, multi_os = runners(cask:)
-          runners.product(architectures(cask:)).filter_map do |runner, arch|
+          runners.product(architectures(cask:, os: :macos)).filter_map do |runner, arch|
             native_runner_arch = arch == runner.fetch(:arch)
-            # we don't need to run simulated archs on Linux
+            # we don't need to run simulated archs on Linux or macOS Sequoia
+            # because they exist as real GitHub hosted runner
             next if runner.fetch(:symbol) == :linux && !native_runner_arch
-            # we don't need to run simulated archs on macOS
             next if runner.fetch(:symbol) == :sequoia && !native_runner_arch
 
             # If it's just a single OS test then we can just use the two real arch runners.
@@ -277,7 +300,7 @@ module Homebrew
 
             if runner.fetch(:symbol) == :linux
               runner_output[:container] = {
-                image:   "ghcr.io/homebrew/ubuntu22.04:main",
+                image:   "ghcr.io/homebrew/brew:main",
                 options: "--user=linuxbrew",
               }
             end

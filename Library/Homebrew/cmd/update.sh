@@ -8,10 +8,51 @@
 # HOMEBREW_AUTO_UPDATE_SECS, HOMEBREW_BREW_DEFAULT_GIT_REMOTE, HOMEBREW_BREW_GIT_REMOTE, HOMEBREW_CACHE,
 # HOMEBREW_CASK_REPOSITORY, HOMEBREW_CELLAR, HOMEBREW_CORE_DEFAULT_GIT_REMOTE, HOMEBREW_CORE_GIT_REMOTE,
 # HOMEBREW_CORE_REPOSITORY, HOMEBREW_CURL, HOMEBREW_DEV_CMD_RUN, HOMEBREW_FORCE_BREWED_CA_CERTIFICATES,
-# HOMEBREW_FORCE_BREWED_CURL, HOMEBREW_FORCE_BREWED_GIT, HOMEBREW_LINUXBREW_CORE_MIGRATION,
+# HOMEBREW_FORCE_BREWED_CURL, HOMEBREW_FORCE_BREWED_GIT,
 # HOMEBREW_SYSTEM_CURL_TOO_OLD, HOMEBREW_USER_AGENT_CURL are set by brew.sh
 # shellcheck disable=SC2154
 source "${HOMEBREW_LIBRARY}/Homebrew/utils/lock.sh"
+
+macos_version_name() {
+  # NOTE: Changes to this list must match `SYMBOLS` in `macos_version.rb`.
+  if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "260000" ]]
+  then
+    echo "tahoe"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "150000" ]]
+  then
+    echo "sequoia"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "140000" ]]
+  then
+    echo "sonoma"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "130000" ]]
+  then
+    echo "ventura"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "120000" ]]
+  then
+    echo "monterey"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "110000" ]]
+  then
+    # odisabled: remove support for Big Sur and macOS x86_64 September (or later) 2027
+    echo "big_sur"
+  elif [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "101500" ]]
+  then
+    # odisabled: remove support for Catalina September (or later) 2026
+    echo "catalina"
+  fi
+}
+
+bottle_tag() {
+  if [[ -n "${HOMEBREW_MACOS}" && "${HOMEBREW_PHYSICAL_PROCESSOR}" == "x86_64" ]]
+  then
+    macos_version_name
+  elif [[ -n "${HOMEBREW_MACOS}" ]]
+  then
+    echo "${HOMEBREW_PHYSICAL_PROCESSOR}_$(macos_version_name)"
+  elif [[ -n "${HOMEBREW_LINUX}" ]]
+  then
+    echo "${HOMEBREW_PHYSICAL_PROCESSOR}_linux"
+  fi
+}
 
 # Replaces the function in Library/Homebrew/brew.sh to cache the Curl/Git executable to
 # provide speedup when using Curl/Git repeatedly (as update.sh does).
@@ -290,13 +331,7 @@ EOS
   # make sure symlinks are saved as-is
   git config --bool core.symlinks true
 
-  if [[ "${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -n "${HOMEBREW_LINUXBREW_CORE_MIGRATION}" ]]
-  then
-    # Don't even try to rebase/merge on linuxbrew-core migration but rely on
-    # stashing etc. above.
-    git reset --hard "${QUIET_ARGS[@]}" "${REMOTE_REF}"
-    unset HOMEBREW_LINUXBREW_CORE_MIGRATION
-  elif [[ -z "${HOMEBREW_MERGE}" ]]
+  if [[ -z "${HOMEBREW_MERGE}" ]]
   then
     # Work around bug where git rebase --quiet is not quiet
     if [[ -z "${HOMEBREW_VERBOSE}" ]]
@@ -348,14 +383,20 @@ fetch_api_file() {
   local update_failed_file="$2"
 
   local api_cache="${HOMEBREW_CACHE}/api"
-  mkdir -p "${api_cache}"
-
-  if [[ "${filename}" == "internal/executables.txt" ]]
-  then
-    mkdir -p "${api_cache}/internal"
-  fi
 
   local cache_path="${api_cache}/${filename}"
+  mkdir -p "$(dirname "${cache_path}")"
+
+  if [[ "${filename}" == "formula.jws.json" ]] || [[ "${filename}" == "internal/formula.$(bottle_tag).jws.json" ]]
+  then
+    local is_formula_file=1
+  fi
+
+  if [[ "${filename}" == "cask.jws.json" ]] || [[ "${filename}" == "internal/cask.$(bottle_tag).jws.json" ]]
+  then
+    local is_cask_file=1
+  fi
+
   if [[ -f "${cache_path}" ]]
   then
     INITIAL_JSON_BYTESIZE="$(wc -c "${cache_path}")"
@@ -392,10 +433,10 @@ fetch_api_file() {
     [[ ${curl_exit_code} -eq 0 ]] && break
   done
 
-  if [[ "${filename}" == "formula.jws.json" ]] && [[ -f "${api_cache}/formula_names.txt" ]]
+  if [[ -n ${is_formula_file} ]] && [[ -f "${api_cache}/formula_names.txt" ]]
   then
     mv -f "${api_cache}/formula_names.txt" "${api_cache}/formula_names.before.txt"
-  elif [[ "${filename}" == "cask.jws.json" ]] && [[ -f "${api_cache}/cask_names.txt" ]]
+  elif [[ -n ${is_cask_file} ]] && [[ -f "${api_cache}/cask_names.txt" ]]
   then
     mv -f "${api_cache}/cask_names.txt" "${api_cache}/cask_names.before.txt"
   fi
@@ -408,7 +449,7 @@ fetch_api_file() {
     if [[ "${INITIAL_JSON_BYTESIZE}" != "${CURRENT_JSON_BYTESIZE}" ]]
     then
 
-      if [[ "${filename}" == "formula.jws.json" ]]
+      if [[ -n ${is_formula_file} ]]
       then
         rm -f "${api_cache}/formula_aliases.txt"
       fi
@@ -604,6 +645,9 @@ EOS
   if [[ -z "${HOMEBREW_CURLRC}" ]]
   then
     CURL_DISABLE_CURLRC_ARGS=(-q)
+  elif [[ "${HOMEBREW_CURLRC}" == /* ]]
+  then
+    CURL_DISABLE_CURLRC_ARGS=(-q --config "${HOMEBREW_CURLRC}")
   else
     CURL_DISABLE_CURLRC_ARGS=()
   fi
@@ -624,16 +668,8 @@ EOS
   fi
 
   if [[ -d "${HOMEBREW_CORE_REPOSITORY}" ]] &&
-     [[ "${HOMEBREW_CORE_DEFAULT_GIT_REMOTE}" != "${HOMEBREW_CORE_GIT_REMOTE}" ||
-        -n "${HOMEBREW_LINUXBREW_CORE_MIGRATION}" ]]
+     [[ "${HOMEBREW_CORE_DEFAULT_GIT_REMOTE}" != "${HOMEBREW_CORE_GIT_REMOTE}" ]]
   then
-    if [[ -n "${HOMEBREW_LINUXBREW_CORE_MIGRATION}" ]]
-    then
-      # This means a migration is needed (in case it isn't run this time)
-      safe_cd "${HOMEBREW_REPOSITORY}"
-      git config --bool homebrew.linuxbrewmigrated false
-    fi
-
     safe_cd "${HOMEBREW_CORE_REPOSITORY}"
     echo "HOMEBREW_CORE_GIT_REMOTE set: using ${HOMEBREW_CORE_GIT_REMOTE} as the Homebrew/homebrew-core Git remote."
     git remote set-url origin "${HOMEBREW_CORE_GIT_REMOTE}"
@@ -644,12 +680,6 @@ EOS
   fi
 
   safe_cd "${HOMEBREW_REPOSITORY}"
-
-  # This means a migration is needed but hasn't completed (yet).
-  if [[ "$(git config get --type=bool homebrew.linuxbrewmigrated 2>/dev/null)" == "false" ]]
-  then
-    export HOMEBREW_MIGRATE_LINUXBREW_FORMULAE=1
-  fi
 
   # This means the user has run `brew which-formula` before and we should fetch executables.txt
   if [[ "$(git config get --type=bool homebrew.commandnotfound 2>/dev/null)" == "true" ]]
@@ -955,11 +985,29 @@ EOS
 
   if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" ]]
   then
-    for json in formula cask formula_tap_migrations cask_tap_migrations
+    if [[ -n "${HOMEBREW_USE_INTERNAL_API}" ]]
+    then
+      api_files=("internal/formula.$(bottle_tag)" "internal/cask.$(bottle_tag)")
+    else
+      api_files=(formula cask formula_tap_migrations cask_tap_migrations)
+    fi
+
+    for json in "${api_files[@]}"
     do
       local filename="${json}.jws.json"
       fetch_api_file "${filename}" "${update_failed_file}"
     done
+
+    if [[ -n "${HOMEBREW_USE_INTERNAL_API}" ]]
+    then
+      # Remove files only downloaded by the regular API
+      rm -f "${HOMEBREW_CACHE}/api/formula.jws.json" "${HOMEBREW_CACHE}/api/cask.jws.json"
+      rm -f "${HOMEBREW_CACHE}/api/formula_tap_migrations.jws.json" "${HOMEBREW_CACHE}/api/cask_tap_migrations.jws.json"
+    else
+      # Remove files only downloaded by the internal API
+      rm -f "${HOMEBREW_CACHE}/api/internal/formula.$(bottle_tag).jws.json"
+      rm -f "${HOMEBREW_CACHE}/api/internal/cask.$(bottle_tag).jws.json"
+    fi
 
     # Not a typo, these are the files we used to download that no longer need so should cleanup.
     rm -f "${HOMEBREW_CACHE}/api/formula.json" "${HOMEBREW_CACHE}/api/cask.json"
@@ -991,7 +1039,6 @@ EOS
      [[ -n "${HOMEBREW_UPDATE_FAILED}" ]] ||
      [[ -n "${HOMEBREW_MISSING_REMOTE_REF_DIRS}" ]] ||
      [[ -n "${HOMEBREW_UPDATE_FORCE}" ]] ||
-     [[ -n "${HOMEBREW_MIGRATE_LINUXBREW_FORMULAE}" ]] ||
      [[ -d "${HOMEBREW_LIBRARY}/LinkedKegs" ]] ||
      [[ ! -f "${HOMEBREW_CACHE}/all_commands_list.txt" ]] ||
      [[ -n "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_UPDATE_AUTO}" ]]

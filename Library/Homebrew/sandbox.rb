@@ -185,7 +185,12 @@ class Sandbox
                 Process.setsid
                 controller.close
                 worker.ioctl(TIOCSCTTY, 0) # Make this the controlling terminal.
+
+                # We're opening and immediately closing so this is safe.
+                # rubocop:disable Style/FileOpen
                 File.open("/dev/tty", Fcntl::O_WRONLY).close # Workaround for https://developer.apple.com/forums/thread/663632
+                # rubocop:enable Style/FileOpen
+
                 worker.close_on_exec = true
                 exec(*command, in: worker, out: worker, err: worker) # And map everything to the PTY.
               else

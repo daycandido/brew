@@ -24,6 +24,7 @@ require "cask/artifact/mdimporter"
 require "cask/artifact/screen_saver"
 require "cask/artifact/bashcompletion"
 require "cask/artifact/fishcompletion"
+require "cask/artifact/generated_completion"
 require "cask/artifact/zshcompletion"
 require "cask/artifact/service"
 require "cask/artifact/stage_only"
@@ -40,7 +41,6 @@ module Cask
       ::Cask::Artifact::Colorpicker,
       ::Cask::Artifact::Dictionary,
       ::Cask::Artifact::InputMethod,
-      ::Cask::Artifact::Installer,
       ::Cask::Artifact::InternetPlugin,
       ::Cask::Artifact::KeyboardLayout,
       ::Cask::Artifact::Mdimporter,
@@ -53,5 +53,7 @@ module Cask
       ::Cask::Artifact::VstPlugin,
       ::Cask::Artifact::Vst3Plugin,
     ].freeze
+
+    LINUX_ONLY_ARTIFACTS = T.let([].freeze, T::Array[T.untyped])
   end
 end

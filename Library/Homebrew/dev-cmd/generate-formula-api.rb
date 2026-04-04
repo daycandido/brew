@@ -69,40 +69,18 @@ module Homebrew
           File.write("_data/formula_canonical.json", "#{canonical_json}\n") unless args.dry_run?
 
           OnSystem::VALID_OS_ARCH_TAGS.each do |bottle_tag|
-            aliases = {}
-            renames = {}
-            variation_formulae = all_formulae.to_h do |name, formula|
-              formula = Homebrew::API.merge_variations(formula, bottle_tag:)
-
-              formula["aliases"]&.each do |alias_name|
-                aliases[alias_name] = name
-              end
-
-              formula["oldnames"]&.each do |oldname|
-                renames[oldname] = name
-              end
-
-              version = Version.new(formula.dig("versions", "stable"))
-              pkg_version = PkgVersion.new(version, formula["revision"])
-              version_scheme = formula.fetch("version_scheme", 0)
-              rebuild = formula.dig("bottle", "stable", "rebuild") || 0
-
-              bottle_collector = Utils::Bottles::Collector.new
-              formula.dig("bottle", "stable", "files")&.each do |tag, data|
-                tag = Utils::Bottles::Tag.from_symbol(tag)
-                bottle_collector.add tag, checksum: Checksum.new(data["sha256"]), cellar: :any
-              end
-
-              sha256 = bottle_collector.specification_for(bottle_tag)&.checksum&.to_s
-
-              [name, [pkg_version.to_s, version_scheme, rebuild, sha256]]
+            formulae = all_formulae.to_h do |name, hash|
+              hash = Homebrew::API::Formula::FormulaStructGenerator.generate_formula_struct_hash(hash, bottle_tag:)
+                                                                   .serialize(bottle_tag:)
+              [name, hash]
             end
 
             json_contents = {
-              formulae:       variation_formulae,
-              aliases:        aliases,
-              renames:        renames,
-              tap_migrations: CoreTap.instance.tap_migrations,
+              formulae:,
+              aliases:        tap.alias_table,
+              renames:        tap.formula_renames,
+              tap_git_head:   tap.git_head,
+              tap_migrations: tap.tap_migrations,
             }
 
             File.write("api/internal/formula.#{bottle_tag}.json", JSON.generate(json_contents)) unless args.dry_run?

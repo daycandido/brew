@@ -19,19 +19,19 @@ class AbstractTab
   # Check whether the formula or cask was installed as a dependency.
   #
   # @api internal
-  sig { returns(T.nilable(T::Boolean)) } # TODO: change this to always return a boolean
+  sig { returns(T::Boolean) }
   attr_accessor :installed_as_dependency
 
   # Check whether the formula or cask was installed on request.
   #
   # @api internal
-  sig { returns(T.nilable(T::Boolean)) } # TODO: change this to always return a boolean
+  sig { returns(T::Boolean) }
   attr_accessor :installed_on_request
 
   sig { returns(T.nilable(String)) }
   attr_accessor :homebrew_version
 
-  attr_accessor :tabfile, :loaded_from_api, :time, :arch, :source, :built_on
+  attr_accessor :tabfile, :loaded_from_api, :loaded_from_internal_api, :time, :arch, :source, :built_on
 
   # Returns the formula or cask runtime dependencies.
   #
@@ -41,11 +41,14 @@ class AbstractTab
   # TODO: Update attributes to only accept symbol keys (kwargs style).
   sig { params(attributes: T.any(T::Hash[String, T.untyped], T::Hash[Symbol, T.untyped])).void }
   def initialize(attributes = {})
-    @installed_as_dependency = T.let(nil, T.nilable(T::Boolean))
-    @installed_on_request = T.let(nil, T.nilable(T::Boolean))
+    @installed_as_dependency = T.let(false, T::Boolean)
+    @installed_on_request = T.let(false, T::Boolean)
+    @installed_as_dependency_present = T.let(false, T::Boolean)
+    @installed_on_request_present = T.let(false, T::Boolean)
     @homebrew_version = T.let(nil, T.nilable(String))
     @tabfile = T.let(nil, T.nilable(Pathname))
     @loaded_from_api = T.let(nil, T.nilable(T::Boolean))
+    @loaded_from_internal_api = T.let(nil, T.nilable(T::Boolean))
     @time = T.let(nil, T.nilable(Integer))
     @arch = T.let(nil, T.nilable(String))
     @source = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
@@ -54,6 +57,12 @@ class AbstractTab
 
     attributes.each do |key, value|
       case key.to_sym
+      when :installed_as_dependency
+        @installed_as_dependency = value.nil? ? false : value
+        @installed_as_dependency_present = true
+      when :installed_on_request
+        @installed_on_request = value.nil? ? false : value
+        @installed_on_request_present = true
       when :changed_files
         @changed_files = value&.map { |f| Pathname(f) }
       else
@@ -66,17 +75,18 @@ class AbstractTab
   sig { params(formula_or_cask: T.any(Formula, Cask::Cask)).returns(T.attached_class) }
   def self.create(formula_or_cask)
     attributes = {
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => false,
-      "loaded_from_api"         => formula_or_cask.loaded_from_api?,
-      "time"                    => Time.now.to_i,
-      "arch"                    => Hardware::CPU.arch,
-      "source"                  => {
+      "homebrew_version"         => HOMEBREW_VERSION,
+      "installed_as_dependency"  => false,
+      "installed_on_request"     => false,
+      "loaded_from_api"          => formula_or_cask.loaded_from_api?,
+      "loaded_from_internal_api" => formula_or_cask.loaded_from_internal_api?,
+      "time"                     => Time.now.to_i,
+      "arch"                     => Hardware::CPU.arch,
+      "source"                   => {
         "tap"          => formula_or_cask.tap&.name,
         "tap_git_head" => formula_or_cask.tap_git_head,
       },
-      "built_on"                => DevelopmentTools.build_system_info,
+      "built_on"                 => DevelopmentTools.build_system_info,
     }
 
     new(attributes)
@@ -111,19 +121,20 @@ class AbstractTab
   sig { returns(T.attached_class) }
   def self.empty
     attributes = {
-      "homebrew_version"        => HOMEBREW_VERSION,
-      "installed_as_dependency" => false,
-      "installed_on_request"    => false,
-      "loaded_from_api"         => false,
-      "time"                    => nil,
-      "runtime_dependencies"    => nil,
-      "arch"                    => nil,
-      "source"                  => {
+      "homebrew_version"         => HOMEBREW_VERSION,
+      "installed_as_dependency"  => false,
+      "installed_on_request"     => false,
+      "loaded_from_api"          => false,
+      "loaded_from_internal_api" => false,
+      "time"                     => nil,
+      "runtime_dependencies"     => nil,
+      "arch"                     => nil,
+      "source"                   => {
         "path"         => nil,
         "tap"          => nil,
         "tap_git_head" => nil,
       },
-      "built_on"                => DevelopmentTools.build_system_info,
+      "built_on"                 => DevelopmentTools.build_system_info,
     }
 
     new(attributes)
@@ -131,12 +142,13 @@ class AbstractTab
 
   def self.formula_to_dep_hash(formula, declared_deps)
     {
-      "full_name"         => formula.full_name,
-      "version"           => formula.version.to_s,
-      "revision"          => formula.revision,
-      "bottle_rebuild"    => formula.bottle&.rebuild,
-      "pkg_version"       => formula.pkg_version.to_s,
-      "declared_directly" => declared_deps.include?(formula.full_name),
+      "full_name"             => formula.full_name,
+      "version"               => formula.version.to_s,
+      "revision"              => formula.revision,
+      "bottle_rebuild"        => formula.bottle&.rebuild,
+      "pkg_version"           => formula.pkg_version.to_s,
+      "declared_directly"     => declared_deps.include?(formula.full_name),
+      "compatibility_version" => formula.compatibility_version,
     }.compact
   end
   private_class_method :formula_to_dep_hash
@@ -168,7 +180,7 @@ class AbstractTab
   end
 end
 
-class Tab < AbstractTab
+class Tab < AbstractTab # rubocop:todo Style/OneClassPerFile
   # Check whether the formula was poured from a bottle.
   #
   # @api internal
@@ -222,9 +234,10 @@ class Tab < AbstractTab
     tab.source["spec"] = formula.active_spec_sym.to_s
     tab.source["path"] = formula.specified_path.to_s
     tab.source["versions"] = {
-      "stable"         => formula.stable&.version&.to_s,
-      "head"           => formula.head&.version&.to_s,
-      "version_scheme" => formula.version_scheme,
+      "stable"                => formula.stable&.version&.to_s,
+      "head"                  => formula.head&.version&.to_s,
+      "version_scheme"        => formula.version_scheme,
+      "compatibility_version" => formula.compatibility_version,
     }
 
     tab
@@ -281,7 +294,12 @@ class Tab < AbstractTab
   # or a fake one if the formula is not installed.
   sig { params(name: String).returns(T.attached_class) }
   def self.for_name(name)
-    for_formula(Formulary.factory(name))
+    rack = HOMEBREW_CELLAR/name
+    if (keg = Keg.from_rack(rack))
+      for_keg(keg)
+    else
+      for_formula(Formulary.from_rack(rack, keg:))
+    end
   end
 
   def self.remap_deprecated_options(deprecated_options, options)
@@ -358,9 +376,10 @@ class Tab < AbstractTab
   sig { returns(T::Hash[String, T.untyped]) }
   def self.empty_source_versions
     {
-      "stable"         => nil,
-      "head"           => nil,
-      "version_scheme" => 0,
+      "stable"                => nil,
+      "head"                  => nil,
+      "version_scheme"        => 0,
+      "compatibility_version" => nil,
     }
   end
   private_class_method :empty_source_versions
@@ -456,12 +475,12 @@ class Tab < AbstractTab
 
   sig { returns(T.nilable(Version)) }
   def stable_version
-    versions["stable"]&.then { Version.new(_1) }
+    versions["stable"]&.then { Version.new(it) }
   end
 
   sig { returns(T.nilable(Version)) }
   def head_version
-    versions["head"]&.then { Version.new(_1) }
+    versions["head"]&.then { Version.new(it) }
   end
 
   sig { returns(Integer) }
@@ -477,24 +496,25 @@ class Tab < AbstractTab
   sig { params(options: T.nilable(T::Hash[String, T.untyped])).returns(String) }
   def to_json(options = nil)
     attributes = {
-      "homebrew_version"        => homebrew_version,
-      "used_options"            => used_options.as_flags,
-      "unused_options"          => unused_options.as_flags,
-      "built_as_bottle"         => built_as_bottle,
-      "poured_from_bottle"      => poured_from_bottle,
-      "loaded_from_api"         => loaded_from_api,
-      "installed_as_dependency" => installed_as_dependency,
-      "installed_on_request"    => installed_on_request,
-      "changed_files"           => changed_files&.map(&:to_s),
-      "time"                    => time,
-      "source_modified_time"    => source_modified_time.to_i,
-      "stdlib"                  => stdlib&.to_s,
-      "compiler"                => compiler.to_s,
-      "aliases"                 => aliases,
-      "runtime_dependencies"    => runtime_dependencies,
-      "source"                  => source,
-      "arch"                    => arch,
-      "built_on"                => built_on,
+      "homebrew_version"         => homebrew_version,
+      "used_options"             => used_options.as_flags,
+      "unused_options"           => unused_options.as_flags,
+      "built_as_bottle"          => built_as_bottle,
+      "poured_from_bottle"       => poured_from_bottle,
+      "loaded_from_api"          => loaded_from_api,
+      "loaded_from_internal_api" => loaded_from_internal_api,
+      "installed_as_dependency"  => installed_as_dependency,
+      "installed_on_request"     => installed_on_request,
+      "changed_files"            => changed_files&.map(&:to_s),
+      "time"                     => time,
+      "source_modified_time"     => source_modified_time.to_i,
+      "stdlib"                   => stdlib&.to_s,
+      "compiler"                 => compiler.to_s,
+      "aliases"                  => aliases,
+      "runtime_dependencies"     => runtime_dependencies,
+      "source"                   => source,
+      "arch"                     => arch,
+      "built_on"                 => built_on,
     }
     attributes.delete("stdlib") if attributes["stdlib"].blank?
 
@@ -536,7 +556,12 @@ class Tab < AbstractTab
       "Built from source"
     end
 
-    s << "using the formulae.brew.sh API" if loaded_from_api
+    if loaded_from_internal_api
+      s << "using the internal formulae.brew.sh API"
+    elsif loaded_from_api
+      s << "using the formulae.brew.sh API"
+    end
+
     s << Time.at(time).strftime("on %Y-%m-%d at %H:%M:%S") if time
 
     unless used_options.empty?
@@ -545,4 +570,10 @@ class Tab < AbstractTab
     end
     s.join(" ")
   end
+
+  sig { returns(T::Boolean) }
+  def installed_on_request_present? = @installed_on_request_present
+
+  sig { returns(T::Boolean) }
+  def installed_as_dependency_present? = @installed_as_dependency_present
 end

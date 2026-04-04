@@ -1,9 +1,10 @@
-# typed: true # rubocop:todo Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 module Homebrew
   module TestBot
     class CleanupBefore < TestCleanup
+      sig { params(args: Homebrew::Cmd::TestBotCmd::Args).void }
       def run!(args:)
         test_header(:CleanupBefore)
 
@@ -27,6 +28,7 @@ module Homebrew
             delete_or_move bad_paths, sudo: true
           elsif OS.mac?
             delete_or_move HOMEBREW_CELLAR.glob("*")
+            delete_or_move HOMEBREW_CASKROOM.glob("session-manager-plugin")
 
             frameworks_dir = Pathname("/Library/Frameworks")
             frameworks = %w[

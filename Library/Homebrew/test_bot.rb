@@ -1,4 +1,4 @@
-# typed: true # rubocop:todo Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 require "test_bot/step"
@@ -23,14 +23,17 @@ module Homebrew
 
     HOMEBREW_TAP_REGEX = %r{^([\w-]+)/homebrew-([\w-]+)$}
 
+    sig { params(args: Homebrew::Cmd::TestBotCmd::Args).returns(T::Boolean) }
     def cleanup?(args)
-      args.cleanup? || ENV["GITHUB_ACTIONS"].present?
+      args.cleanup? || GitHub::Actions.env_set?
     end
 
+    sig { params(args: Homebrew::Cmd::TestBotCmd::Args).returns(T::Boolean) }
     def local?(args)
-      args.local? || ENV["GITHUB_ACTIONS"].present?
+      args.local? || GitHub::Actions.env_set?
     end
 
+    sig { params(tap: T.nilable(String)).returns(T.nilable(Tap)) }
     def resolve_test_tap(tap = nil)
       return Tap.fetch(tap) if tap
 
@@ -52,6 +55,7 @@ module Homebrew
       end
     end
 
+    sig { params(args: Homebrew::Cmd::TestBotCmd::Args).void }
     def run!(args)
       $stdout.sync = true
       $stderr.sync = true
@@ -60,7 +64,6 @@ module Homebrew
         raise UsageError, "cannot use --cleanup from HOMEBREW_PREFIX as it will delete all output."
       end
 
-      ENV["HOMEBREW_DOWNLOAD_CONCURRENCY"] = "auto" if args.concurrent_downloads?
       ENV["HOMEBREW_DEVELOPER"] = "1"
       ENV["HOMEBREW_NO_AUTO_UPDATE"] = "1"
       ENV["HOMEBREW_NO_EMOJI"] = "1"
@@ -122,7 +125,7 @@ module Homebrew
       end
 
       if tap
-        tap_github = " (#{ENV["GITHUB_REPOSITORY"]}" if tap.full_name != ENV["GITHUB_REPOSITORY"]
+        tap_github = " (#{ENV["GITHUB_REPOSITORY"]})" if tap.full_name != ENV["GITHUB_REPOSITORY"]
         tap_revision = Utils.safe_popen_read(
           GIT, "-C", tap.path.to_s,
           "log", "-1", "--format=%h (%s)"

@@ -20,9 +20,9 @@ module OS
       ].freeze
 
       # The path to the system's dynamic linker or `nil` if not found
-      sig { returns(T.nilable(Pathname)) }
+      sig { returns(T.nilable(::Pathname)) }
       def self.system_ld_so
-        @system_ld_so ||= T.let(nil, T.nilable(Pathname))
+        @system_ld_so ||= T.let(nil, T.nilable(::Pathname))
         @system_ld_so ||= begin
           linker = DYNAMIC_LINKERS.find { |s| File.executable? s }
           Pathname(linker) if linker
@@ -31,7 +31,7 @@ module OS
 
       sig { params(brewed: T::Boolean).returns(String) }
       def self.ld_so_diagnostics(brewed: true)
-        @ld_so_diagnostics ||= T.let({}, T.nilable(T::Hash[Pathname, String]))
+        @ld_so_diagnostics ||= T.let({}, T.nilable(T::Hash[Pathname, T.nilable(String)]))
 
         ld_so_target = if brewed
           ld_so = HOMEBREW_PREFIX/"lib/ld.so"
@@ -77,7 +77,7 @@ module OS
         dirs
       end
 
-      sig { params(conf_path: T.any(Pathname, String), brewed: T::Boolean).returns(T::Array[String]) }
+      sig { params(conf_path: T.any(::Pathname, String), brewed: T::Boolean).returns(T::Array[String]) }
       def self.library_paths(conf_path = "ld.so.conf", brewed: true)
         conf_file = Pathname(sysconfdir(brewed:))/conf_path
         return [] unless conf_file.exist?

@@ -49,7 +49,7 @@ jobs:
           signing_key: ${{ secrets.BREWTESTBOT_SSH_SIGNING_KEY }}
 
       - name: Cache Bundler RubyGems
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
@@ -140,8 +140,8 @@ jobs:
 
   issue:
     needs: updates
-    if: always() && github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'schedule' && github.repository == 'Homebrew/brew'
+    runs-on: ubuntu-slim
     env:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     permissions:

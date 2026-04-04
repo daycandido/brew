@@ -48,8 +48,8 @@ module Homebrew
                description: "Download a bottle if it exists for the current or newest version of macOS, " \
                             "even if it would not be used during installation."
         switch "--[no-]quarantine",
-               description: "Disable/enable quarantining of downloads (default: enabled).",
-               env:         :cask_opts_quarantine
+               env:       :cask_opts_quarantine,
+               odisabled: true
         switch "--formula", "--formulae",
                description: "Treat all named arguments as formulae."
         switch "--cask", "--casks",

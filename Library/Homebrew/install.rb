@@ -1,4 +1,4 @@
-# typed: true # rubocop:todo Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 require "diagnostic"
@@ -17,7 +17,7 @@ module Homebrew
     class << self
       sig { params(all_fatal: T::Boolean).void }
       def perform_preinstall_checks_once(all_fatal: false)
-        @perform_preinstall_checks_once ||= {}
+        @perform_preinstall_checks_once ||= T.let({}, T.nilable(T::Hash[T::Boolean, TrueClass]))
         @perform_preinstall_checks_once[all_fatal] ||= begin
           perform_preinstall_checks(all_fatal:)
           true
@@ -28,7 +28,7 @@ module Homebrew
       def check_cc_argv(cc)
         return unless cc
 
-        @checks ||= Diagnostic::Checks.new
+        @checks ||= T.let(Diagnostic::Checks.new, T.nilable(Homebrew::Diagnostic::Checks))
         opoo <<~EOS
           You passed `--cc=#{cc}`.
 
@@ -103,7 +103,7 @@ module Homebrew
            !formula.head_version_outdated?(installed_head_version, fetch_head:)
           new_head_installed = true
         end
-        prefix_installed = formula.prefix.exist? && !formula.prefix.children.empty?
+        prefix_installed = formula.prefix.exist? && !formula.prefix.empty?
 
         # Check if the installed formula is from a different tap
         if formula.any_version_installed? &&
@@ -181,7 +181,7 @@ module Homebrew
             msg = <<~EOS
               #{msg}, it's just not linked.
               To link this version, run:
-                brew link #{formula}
+                brew link #{formula.full_name}
             EOS
           else
             msg = if quiet
@@ -329,24 +329,39 @@ module Homebrew
         end
       end
 
-      sig { params(formula_installers: T::Array[FormulaInstaller]).returns(T::Array[FormulaInstaller]) }
-      def fetch_formulae(formula_installers)
+      sig {
+        params(
+          formula_installers:      T::Array[FormulaInstaller],
+          download_queue:          T.nilable(Homebrew::DownloadQueue),
+          fetch_after_enqueue:     T::Boolean,
+          shutdown_download_queue: T::Boolean,
+          show_downloads_heading:  T::Boolean,
+        ).returns(T::Array[FormulaInstaller])
+      }
+      def fetch_formulae(
+        formula_installers,
+        download_queue: nil,
+        fetch_after_enqueue: true,
+        shutdown_download_queue: true,
+        show_downloads_heading: true
+      )
         formulae_names_to_install = formula_installers.map { |fi| fi.formula.name }
         return formula_installers if formulae_names_to_install.empty?
 
-        formula_sentence = formulae_names_to_install.map { |name| Formatter.identifier(name) }.to_sentence
-        oh1 "Fetching downloads for: #{formula_sentence}", truncate: false
-        if EnvConfig.download_concurrency > 1
-          download_queue = Homebrew::DownloadQueue.new(pour: true)
-          formula_installers.each do |fi|
-            fi.download_queue = download_queue
-          end
+        download_queue = T.let(download_queue || Homebrew::DownloadQueue.new(pour: true), Homebrew::DownloadQueue)
+
+        if show_downloads_heading
+          formula_sentence = formulae_names_to_install.map { |name| Formatter.identifier(name) }.to_sentence
+          oh1 "Fetching downloads for: #{formula_sentence}", truncate: false
+        end
+        formula_installers.each do |fi|
+          fi.download_queue = download_queue
         end
 
         valid_formula_installers = formula_installers.dup
 
         begin
-          [:prelude_fetch, :prelude, :fetch].each do |step|
+          [:prelude_fetch, :prelude, :enqueue_fetch].each do |step|
             valid_formula_installers.select! do |fi|
               fi.public_send(step)
               true
@@ -357,13 +372,41 @@ module Homebrew
               ofail "#{fi.formula}: #{e}"
               false
             end
-            download_queue&.fetch
+            next if step == :enqueue_fetch && !fetch_after_enqueue
+
+            download_queue.fetch
           end
         ensure
-          download_queue&.shutdown
+          download_queue.shutdown if shutdown_download_queue
         end
 
         valid_formula_installers
+      end
+
+      sig { params(formula_installers: T::Array[FormulaInstaller], download_queue: Homebrew::DownloadQueue).returns(T::Array[FormulaInstaller]) }
+      def enqueue_formulae(formula_installers, download_queue:)
+        fetch_formulae(
+          formula_installers,
+          download_queue:,
+          fetch_after_enqueue:     false,
+          shutdown_download_queue: false,
+          show_downloads_heading:  false,
+        )
+      end
+
+      sig { params(formula_names: T::Array[String], cask_names: T::Array[String]).void }
+      def show_combined_fetch_downloads_heading(formula_names: [], cask_names: [])
+        combined_fetch_targets = formula_names.map { |name| Formatter.identifier(name) } +
+                                 cask_names.map { |name| Formatter.identifier(name) }
+        return if combined_fetch_targets.empty?
+
+        oh1 "Fetching downloads for: #{combined_fetch_targets.to_sentence}", truncate: false
+      end
+
+      sig { params(cask_installers: T::Array[T.untyped]).void }
+      def enqueue_cask_installers(cask_installers)
+        cask_installers.each(&:prelude)
+        cask_installers.each(&:enqueue_downloads)
       end
 
       sig {
@@ -414,9 +457,7 @@ module Homebrew
           return
         end
 
-        valid_formula_installers = fetch_formulae(formula_installers)
-
-        valid_formula_installers.each do |fi|
+        formula_installers.each do |fi|
           formula = fi.formula
           upgrade = formula.linked? && formula.outdated? && !formula.head? && !Homebrew::EnvConfig.no_install_upgrade?
           install_formula(fi, upgrade:)
@@ -424,13 +465,19 @@ module Homebrew
         end
       end
 
-      sig { params(formula: Formula, dependencies: T::Array[[Dependency, Options]]).void }
-      def print_dry_run_dependencies(formula, dependencies)
+      sig {
+        params(
+          formula:      Formula,
+          dependencies: T::Array[Dependency],
+          _block:       T.proc.params(arg0: Formula).returns(String),
+        ).void
+      }
+      def print_dry_run_dependencies(formula, dependencies, &_block)
         return if dependencies.empty?
 
         ohai "Would install #{Utils.pluralize("dependency", dependencies.count, include_count: true)} " \
              "for #{formula.name}:"
-        formula_names = dependencies.map { |(dep, _options)| yield dep.to_formula }
+        formula_names = dependencies.map { |dep| yield dep.to_formula }
         puts formula_names.join(" ")
       end
 
@@ -447,10 +494,10 @@ module Homebrew
 
         puts "#{::Utils.pluralize("Formula", formulae.count)} \
 (#{formulae.count}): #{formulae.join(", ")}\n\n"
-        puts "Download Size: #{disk_usage_readable(sizes.fetch(:download))}"
-        puts "Install Size:  #{disk_usage_readable(sizes.fetch(:installed))}"
+        puts "Download Size: #{Formatter.disk_usage_readable(sizes.fetch(:download))}"
+        puts "Install Size:  #{Formatter.disk_usage_readable(sizes.fetch(:installed))}"
         if (net_install_size = sizes[:net]) && net_install_size != 0
-          puts "Net Install Size: #{disk_usage_readable(net_install_size)}"
+          puts "Net Install Size: #{Formatter.disk_usage_readable(net_install_size)}"
         end
 
         ask_input

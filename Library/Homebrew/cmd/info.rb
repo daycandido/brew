@@ -298,7 +298,14 @@ module Homebrew
         attrs << "pinned at #{formula.pinned_version}" if formula.pinned?
         attrs << "keg-only" if formula.keg_only?
 
-        puts "#{oh1_title(formula.full_name)}: #{specs * ", "}#{" [#{attrs * ", "}]" unless attrs.empty?}"
+        kegs = formula.installed_kegs
+        name_with_status = if kegs.empty?
+          pretty_uninstalled(formula.full_name)
+        else
+          pretty_installed(formula.full_name)
+        end
+
+        puts "#{oh1_title(name_with_status)}: #{specs * ", "}#{" [#{attrs * ", "}]" unless attrs.empty?}"
         puts formula.desc if formula.desc
         puts Formatter.url(formula.homepage) if formula.homepage
 
@@ -319,7 +326,6 @@ module Homebrew
           EOS
         end
 
-        kegs = formula.installed_kegs
         heads, versioned = kegs.partition { |keg| keg.version.head? }
         kegs = [
           *heads.sort_by { |keg| -keg.tab.time.to_i },
@@ -332,8 +338,8 @@ module Homebrew
               bottle.fetch_tab(quiet: !args.debug?) if args.fetch_manifest?
               bottle_size = bottle.bottle_size
               installed_size = bottle.installed_size
-              puts "Bottle Size: #{disk_usage_readable(bottle_size)}" if bottle_size
-              puts "Installed Size: #{disk_usage_readable(installed_size)}" if installed_size
+              puts "Bottle Size: #{Formatter.disk_usage_readable(bottle_size)}" if bottle_size
+              puts "Installed Size: #{Formatter.disk_usage_readable(installed_size)}" if installed_size
             rescue RuntimeError => e
               odebug e
             end
@@ -387,7 +393,7 @@ module Homebrew
       sig { params(dependencies: T::Array[Dependency]).returns(String) }
       def decorate_dependencies(dependencies)
         deps_status = dependencies.map do |dep|
-          if dep.satisfied?([])
+          if dep.satisfied?
             pretty_installed(dep_display_s(dep))
           else
             pretty_uninstalled(dep_display_s(dep))
@@ -426,14 +432,16 @@ module Homebrew
         ohai title
 
         total_size = items.sum(&:size)
-        total_size_str = disk_usage_readable(total_size)
+        total_size_str = Formatter.disk_usage_readable(total_size)
 
         name_width = (items.map { |item| item.name.length } + [5]).max
-        size_width = (items.map { |item| disk_usage_readable(item.size).length } + [total_size_str.length]).max
+        size_width = (items.map do |item|
+          Formatter.disk_usage_readable(item.size).length
+        end + [total_size_str.length]).max
 
         items.each do |item|
           puts format("%-#{name_width}s %#{size_width}s", item.name,
-                      disk_usage_readable(item.size))
+                      Formatter.disk_usage_readable(item.size))
         end
 
         puts format("%-#{name_width}s %#{size_width}s", "Total", total_size_str)

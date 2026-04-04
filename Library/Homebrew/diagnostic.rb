@@ -21,7 +21,7 @@ module Homebrew
 
     sig {
       params(formulae: T::Array[Formula], hide: T::Array[String], _block: T.nilable(
-        T.proc.params(formula_name: String, missing_dependencies: T::Array[Formula]).void,
+        T.proc.params(formula_name: String, missing_dependencies: T::Array[Dependency]).void,
       )).returns(T::Hash[String, T::Array[String]])
     }
     def self.missing_deps(formulae, hide = [], &_block)
@@ -61,7 +61,7 @@ module Homebrew
 
       sig { params(verbose: T::Boolean).void }
       def initialize(verbose: true)
-        @verbose = T.let(verbose, T::Boolean)
+        @verbose = verbose
         @found = T.let([], T::Array[String])
         @seen_prefix_bin = T.let(false, T::Boolean)
         @seen_prefix_sbin = T.let(false, T::Boolean)
@@ -146,16 +146,16 @@ module Homebrew
         return if tier.to_s == "1"
 
         tier_title, tier_slug, tier_issues = if tier.to_s == "unsupported"
-          ["Unsupported", "unsupported", "Do not report any"]
+          ["Unsupported", "unsupported", "Do not report any issues"]
         else
-          ["Tier #{tier}", "tier-#{tier.to_s.downcase}", "You can report Tier #{tier} unrelated"]
+          ["Tier #{tier}", "tier-#{tier.to_s.downcase}", "You can report issues with Tier #{tier} configurations"]
         end
 
         <<~EOS
           This is a #{tier_title} configuration:
             #{Formatter.url("https://docs.brew.sh/Support-Tiers##{tier_slug}")}
-          #{Formatter.bold("#{tier_issues} issues to Homebrew/* repositories!")}
-          Read the above document instead before opening any issues or PRs.
+          #{Formatter.bold("#{tier_issues} to Homebrew/* repositories!")}
+          Read the above document before opening any issues or PRs.
         EOS
       end
 
@@ -244,6 +244,7 @@ module Homebrew
           "libfuse.2.dylib", # MacFuse
           "libfuse3.*.dylib", # MacFuse
           "libfuse_ino64.2.dylib", # MacFuse
+          "libfuse-t*.dylib", # FUSE-T
           "libmacfuse_i32.2.dylib", # OSXFuse MacFuse compatibility layer
           "libmacfuse_i64.2.dylib", # OSXFuse MacFuse compatibility layer
           "libosxfuse_i32.2.dylib", # OSXFuse
@@ -275,6 +276,7 @@ module Homebrew
         # Static libs which are generally OK should be added to this list,
         # with a short description of the software they come with.
         allow_list = [
+          "libfuse-t*.a", # FUSE-T
           "libntfs-3g.a", # NTFS-3G
           "libntfs.a", # NTFS-3G
           "libublio.a", # NTFS-3G
@@ -303,6 +305,7 @@ module Homebrew
         allow_list = [
           "fuse.pc", # OSXFuse/MacFuse
           "fuse3.pc", # OSXFuse/MacFuse
+          "fuse-t.pc", # FUSE-T
           "macfuse.pc", # OSXFuse MacFuse compatibility layer
           "osxfuse.pc", # OSXFuse
           "libntfs-3g.pc", # NTFS-3G
@@ -535,7 +538,7 @@ module Homebrew
       def check_git_version
         minimum_version = ENV.fetch("HOMEBREW_MINIMUM_GIT_VERSION")
         return unless Utils::Git.available?
-        return if Version.new(Utils::Git.version) >= Version.new(minimum_version)
+        return if Utils::Git.version >= Version.new(minimum_version)
 
         git = Formula["git"]
         git_upgrade_cmd = git.any_version_installed? ? "upgrade" : "install"
@@ -698,7 +701,7 @@ module Homebrew
         <<~EOS
           Some installed formulae are missing dependencies.
           You should `brew install` the missing dependencies:
-            brew install #{missing.sort_by(&:full_name) * " "}
+            brew install #{missing.map(&:to_installed_formula).sort_by(&:full_name) * " "}
 
           Run `brew missing` for more details.
         EOS
@@ -1048,7 +1051,7 @@ module Homebrew
 
       sig { returns(T.nilable(String)) }
       def check_cask_load_path
-        paths = $LOAD_PATH.map { user_tilde(_1) }
+        paths = $LOAD_PATH.map { user_tilde(it) }
 
         add_info "$LOAD_PATHS", paths.presence || none_string
 

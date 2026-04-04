@@ -185,7 +185,7 @@ module Cask
                       args:  [
                         "-0",
                         "--",
-                        "/bin/chmod",
+                        "chmod",
                         "-h",
                         "u+w",
                       ],

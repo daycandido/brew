@@ -40,21 +40,12 @@ module Kernel
     with_env(PATH: PATH.new(ORIGINAL_PATHS).to_s, &block)
   end
 
-  sig {
-    type_parameters(:U)
-      .params(locale: String, block: T.proc.returns(T.type_parameter(:U)))
-      .returns(T.type_parameter(:U))
-  }
-  def with_custom_locale(locale, &block)
-    with_env(LC_ALL: locale, &block)
-  end
-
   # Kernel.system but with exceptions.
   sig {
     params(
-      cmd:     T.any(NilClass, Pathname, String, [String, String], T::Hash[String, T.nilable(String)]),
-      argv0:   T.any(NilClass, Pathname, String, [String, String]),
-      args:    T.any(NilClass, Pathname, String),
+      cmd:     T.nilable(T.any(Pathname, String, [String, String], T::Hash[String, T.nilable(String)])),
+      argv0:   T.nilable(T.any(Pathname, String, [String, String])),
+      args:    T.nilable(T.any(Pathname, String)),
       options: T.untyped,
     ).void
   }
@@ -72,8 +63,8 @@ module Kernel
   # @api internal
   sig {
     params(
-      cmd:   T.any(NilClass, Pathname, String, [String, String], T::Hash[String, T.nilable(String)]),
-      argv0: T.any(NilClass, String, [String, String]),
+      cmd:   T.nilable(T.any(Pathname, String, [String, String], T::Hash[String, T.nilable(String)])),
+      argv0: T.nilable(T.any(String, [String, String])),
       args:  T.any(Pathname, String),
     ).returns(T::Boolean)
   }
@@ -185,8 +176,8 @@ module Kernel
     out.close
   end
 
-  # Ensure the given executable is exist otherwise install the brewed version
-  sig { params(name: String, formula_name: T.nilable(String), reason: String, latest: T::Boolean).returns(T.nilable(Pathname)) }
+  # Ensure the given executable exists otherwise install the brewed version
+  sig { params(name: String, formula_name: T.nilable(String), reason: String, latest: T::Boolean).returns(Pathname) }
   def ensure_executable!(name, formula_name = nil, reason: "", latest: false)
     formula_name ||= name
 
@@ -197,75 +188,11 @@ module Kernel
       # path where available, since the former is stable during upgrades.
       HOMEBREW_PREFIX/"opt/#{formula_name}/bin/#{name}",
       HOMEBREW_PREFIX/"bin/#{name}",
-    ].compact.first
-    return executable if executable.exist?
+    ].compact.find(&:exist?)
+    return executable if executable
 
     require "formula"
     Formula[formula_name].ensure_installed!(reason:, latest:).opt_bin/name
-  end
-
-  sig { params(size_in_bytes: T.any(Integer, Float)).returns(String) }
-  def disk_usage_readable(size_in_bytes)
-    if size_in_bytes.abs >= 1_073_741_824
-      size = size_in_bytes.to_f / 1_073_741_824
-      unit = "GB"
-    elsif size_in_bytes.abs >= 1_048_576
-      size = size_in_bytes.to_f / 1_048_576
-      unit = "MB"
-    elsif size_in_bytes.abs >= 1_024
-      size = size_in_bytes.to_f / 1_024
-      unit = "KB"
-    else
-      size = size_in_bytes
-      unit = "B"
-    end
-
-    # avoid trailing zero after decimal point
-    if ((size * 10).to_i % 10).zero?
-      "#{size.to_i}#{unit}"
-    else
-      "#{format("%<size>.1f", size:)}#{unit}"
-    end
-  end
-
-  sig { params(number: Integer).returns(String) }
-  def number_readable(number)
-    numstr = number.to_i.to_s
-    (numstr.size - 3).step(1, -3) { |i| numstr.insert(i.to_i, ",") }
-    numstr
-  end
-
-  # Truncates a text string to fit within a byte size constraint,
-  # preserving character encoding validity. The returned string will
-  # be not much longer than the specified max_bytes, though the exact
-  # shortfall or overrun may vary.
-  sig { params(str: String, max_bytes: Integer, options: T::Hash[Symbol, T.untyped]).returns(String) }
-  def truncate_text_to_approximate_size(str, max_bytes, options = {})
-    front_weight = options.fetch(:front_weight, 0.5)
-    raise "opts[:front_weight] must be between 0.0 and 1.0" if front_weight < 0.0 || front_weight > 1.0
-    return str if str.bytesize <= max_bytes
-
-    glue = "\n[...snip...]\n"
-    max_bytes_in = [max_bytes - glue.bytesize, 1].max
-    bytes = str.dup.force_encoding("BINARY")
-    glue_bytes = glue.encode("BINARY")
-    n_front_bytes = (max_bytes_in * front_weight).floor
-    n_back_bytes = max_bytes_in - n_front_bytes
-    if n_front_bytes.zero?
-      front = bytes[1..0]
-      back = bytes[-max_bytes_in..]
-    elsif n_back_bytes.zero?
-      front = bytes[0..(max_bytes_in - 1)]
-      back = bytes[1..0]
-    else
-      front = bytes[0..(n_front_bytes - 1)]
-      back = bytes[-n_back_bytes..]
-    end
-    out = T.must(front) + glue_bytes + T.must(back)
-    out.force_encoding("UTF-8")
-    out.encode!("UTF-16", invalid: :replace)
-    out.encode!("UTF-8")
-    out
   end
 
   # Calls the given block with the passed environment variables
@@ -287,7 +214,7 @@ module Kernel
   sig {
     type_parameters(:U)
       .params(
-        hash:   T::Hash[Object, T.any(NilClass, PATH, Pathname, String)],
+        hash:   T::Hash[Object, T.nilable(T.any(PATH, Pathname, String))],
         _block: T.proc.returns(T.type_parameter(:U)),
       ).returns(T.type_parameter(:U))
   }
@@ -304,25 +231,5 @@ module Kernel
     ensure
       ENV.update(old_values)
     end
-  end
-
-  sig { returns(T.proc.params(a: String, b: String).returns(Integer)) }
-  def tap_and_name_comparison
-    proc do |a, b|
-      if a.include?("/") && b.exclude?("/")
-        1
-      elsif a.exclude?("/") && b.include?("/")
-        -1
-      else
-        a <=> b
-      end
-    end
-  end
-
-  sig { params(input: String, secrets: T::Array[String]).returns(String) }
-  def redact_secrets(input, secrets)
-    secrets.compact
-           .reduce(input) { |str, secret| str.gsub secret, "******" }
-           .freeze
   end
 end

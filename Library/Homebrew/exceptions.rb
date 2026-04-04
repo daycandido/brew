@@ -1,6 +1,9 @@
 # typed: true # rubocop:todo Sorbet/StrictSigil
 # frozen_string_literal: true
 
+# We intentionally want to have many exceptions in this file.
+# rubocop:disable Style/OneClassPerFile
+
 require "utils/output"
 
 # Raised when a command is used wrong.
@@ -77,6 +80,15 @@ class FormulaValidationError < StandardError
   end
 end
 
+class LegacyDSLError < StandardError
+  attr_reader :attr
+
+  def initialize(attr, value)
+    @attr = attr
+    super "A legacy DSL was used: #{attr} (#{value.inspect})"
+  end
+end
+
 class FormulaSpecificationError < StandardError; end
 
 # Raised when a deprecated method is used.
@@ -132,7 +144,10 @@ class TapFormulaOrCaskUnavailableError < FormulaOrCaskUnavailableError
   sig { returns(String) }
   def to_s
     s = super
-    s += "\nPlease tap it and then try again: brew tap #{tap}" unless tap.installed?
+    unless tap.installed?
+      s += "\nThis command requires the tap #{tap}."
+      s += "\nIf you trust this tap, tap it explicitly and then try again:\n  brew tap #{tap}"
+    end
     s
   end
 end
@@ -236,7 +251,10 @@ class TapFormulaUnavailableError < FormulaUnavailableError
   sig { returns(String) }
   def to_s
     s = super
-    s += "\nPlease tap it and then try again: brew tap #{tap}" unless tap.installed?
+    unless tap.installed?
+      s += "\nThis command requires the tap #{tap}."
+      s += "\nIf you trust this tap, tap it explicitly and then try again:\n  brew tap #{tap}"
+    end
     s
   end
 end
@@ -646,18 +664,21 @@ end
 
 # Raised in {CurlDownloadStrategy#fetch}.
 class CurlDownloadStrategyError < RuntimeError
-  def initialize(url)
+  sig { params(url: String, details: T.nilable(String)).void }
+  def initialize(url, details = nil)
+    suffix = "\n#{details}" if details.present?
     case url
     when %r{^file://(.+)}
-      super "File does not exist: #{Regexp.last_match(1)}"
+      super "File cannot be read: #{Regexp.last_match(1)}#{suffix}"
     else
-      super "Download failed: #{url}"
+      super "Download failed: #{url}#{suffix}"
     end
   end
 end
 
 # Raised in {HomebrewCurlDownloadStrategy#fetch}.
 class HomebrewCurlDownloadStrategyError < CurlDownloadStrategyError
+  sig { params(url: String).void }
   def initialize(url)
     super "Homebrew-installed `curl` is not installed for: #{url}"
   end
@@ -692,7 +713,7 @@ class ErrorDuringExecution < RuntimeError
       status.termsig
     end
 
-    redacted_cmd = redact_secrets(cmd.shelljoin.gsub('\=', "="), secrets)
+    redacted_cmd = Formatter.redact_secrets(cmd.shelljoin.gsub('\=', "="), secrets)
 
     reason = if exitstatus
       "exited with #{exitstatus}"
@@ -803,3 +824,5 @@ class CyclicDependencyError < RuntimeError
     EOS
   end
 end
+
+# rubocop:enable Style/OneClassPerFile

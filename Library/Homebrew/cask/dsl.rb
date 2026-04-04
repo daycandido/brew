@@ -61,6 +61,7 @@ module Cask
       Artifact::ZshCompletion,
       Artifact::FishCompletion,
       Artifact::BashCompletion,
+      Artifact::GeneratedCompletion,
       Artifact::Uninstall,
       Artifact::Zap,
     ].freeze
@@ -97,15 +98,16 @@ module Cask
       :deprecation_reason,
       :deprecation_replacement_cask,
       :deprecation_replacement_formula,
+      :deprecate_args,
       :disable!,
       :disabled?,
       :disable_date,
       :disable_reason,
       :disable_replacement_cask,
       :disable_replacement_formula,
+      :disable_args,
       :livecheck,
       :livecheck_defined?,
-      :livecheckable?, # TODO: remove once `#livecheckable?` was odisabled and is now removed
       :no_autobump!,
       :autobump?,
       :no_autobump_message,
@@ -120,9 +122,9 @@ module Cask
     include OnSystem::MacOSAndLinux
 
     attr_reader :cask, :token, :no_autobump_message, :artifacts, :deprecation_date, :deprecation_reason,
-                :deprecation_replacement_cask, :deprecation_replacement_formula,
+                :deprecation_replacement_cask, :deprecation_replacement_formula, :deprecate_args,
                 :disable_date, :disable_reason, :disable_replacement_cask,
-                :disable_replacement_formula, :on_system_block_min_os
+                :disable_replacement_formula, :disable_args, :on_system_block_min_os
 
     sig { params(cask: Cask).void }
     def initialize(cask)
@@ -148,12 +150,14 @@ module Cask
       @deprecation_reason = T.let(nil, T.nilable(T.any(String, Symbol)))
       @deprecation_replacement_cask = T.let(nil, T.nilable(String))
       @deprecation_replacement_formula = T.let(nil, T.nilable(String))
+      @deprecate_args = T.let(nil, T.nilable(T::Hash[Symbol, T.nilable(T.any(String, Symbol))]))
       @desc = T.let(nil, T.nilable(String))
       @desc_set_in_block = T.let(false, T::Boolean)
       @disable_date = T.let(nil, T.nilable(Date))
       @disable_reason = T.let(nil, T.nilable(T.any(String, Symbol)))
       @disable_replacement_cask = T.let(nil, T.nilable(String))
       @disable_replacement_formula = T.let(nil, T.nilable(String))
+      @disable_args = T.let(nil, T.nilable(T::Hash[Symbol, T.nilable(T.any(String, Symbol))]))
       @disabled = T.let(false, T::Boolean)
       @homepage = T.let(nil, T.nilable(String))
       @homepage_set_in_block = T.let(false, T::Boolean)
@@ -552,6 +556,9 @@ module Cask
       @caveats
     end
 
+    sig { returns(DSL::Caveats) }
+    def caveats_object = @caveats
+
     # Asserts that the cask artifacts auto-update.
     #
     # @api public
@@ -575,14 +582,6 @@ module Cask
       @livecheck
     end
 
-    # Whether the cask contains a `livecheck` block. This is a legacy alias
-    # for `#livecheck_defined?`.
-    sig { returns(T::Boolean) }
-    def livecheckable?
-      odisabled "`livecheckable?`", "`livecheck_defined?`"
-      @livecheck_defined == true
-    end
-
     # Excludes the cask from autobump list.
     #
     # TODO: limit this method to the official taps only
@@ -598,6 +597,8 @@ module Cask
       if !@cask.allow_reassignment && @no_autobump_defined
         raise CaskInvalidError.new(cask, "'no_autobump_defined' stanza may only appear once.")
       end
+
+      odeprecated "no_autobump! because: :requires_manual_review" if because == :requires_manual_review
 
       @no_autobump_defined = true
       @no_autobump_message = because
@@ -624,15 +625,14 @@ module Cask
         raise ArgumentError, "more than one of replacement, replacement_formula and/or replacement_cask specified!"
       end
 
-      # odeprecate: remove this remapping when the :unsigned reason is removed
-      because = :fails_gatekeeper_check if because == :unsigned
-
       if replacement
         odeprecated(
           "deprecate!(:replacement)",
           "deprecate!(:replacement_formula) or deprecate!(:replacement_cask)",
         )
       end
+
+      @deprecate_args = { date:, because:, replacement_formula:, replacement_cask: }
 
       @deprecation_date = Date.parse(date)
       return if @deprecation_date > Date.today
@@ -662,6 +662,8 @@ module Cask
           "disable!(:replacement_formula) or disable!(:replacement_cask)",
         )
       end
+
+      @disable_args = { date:, because:, replacement_formula:, replacement_cask: }
 
       @disable_date = Date.parse(date)
 
@@ -705,16 +707,11 @@ module Cask
     end
 
     def method_missing(method, *)
-      if method
-        Utils.method_missing_message(method, token)
-        nil
-      else
-        super
-      end
+      raise NoMethodError, "undefined method '#{method}' for Cask '#{token}'"
     end
 
     def respond_to_missing?(*)
-      true
+      false
     end
 
     sig { returns(T.nilable(MacOSVersion)) }

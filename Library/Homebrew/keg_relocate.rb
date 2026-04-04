@@ -1,18 +1,22 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "utils/output"
+
 class Keg
-  PREFIX_PLACEHOLDER = T.let("@@HOMEBREW_PREFIX@@", String)
-  CELLAR_PLACEHOLDER = T.let("@@HOMEBREW_CELLAR@@", String)
-  REPOSITORY_PLACEHOLDER = T.let("@@HOMEBREW_REPOSITORY@@", String)
-  LIBRARY_PLACEHOLDER = T.let("@@HOMEBREW_LIBRARY@@", String)
-  PERL_PLACEHOLDER = T.let("@@HOMEBREW_PERL@@", String)
-  JAVA_PLACEHOLDER = T.let("@@HOMEBREW_JAVA@@", String)
-  NULL_BYTE = T.let("\x00", String)
-  NULL_BYTE_STRING = T.let("\\x00", String)
+  extend Utils::Output::Mixin
+
+  PREFIX_PLACEHOLDER = "@@HOMEBREW_PREFIX@@"
+  CELLAR_PLACEHOLDER = "@@HOMEBREW_CELLAR@@"
+  REPOSITORY_PLACEHOLDER = "@@HOMEBREW_REPOSITORY@@"
+  LIBRARY_PLACEHOLDER = "@@HOMEBREW_LIBRARY@@"
+  PERL_PLACEHOLDER = "@@HOMEBREW_PERL@@"
+  JAVA_PLACEHOLDER = "@@HOMEBREW_JAVA@@"
+  NULL_BYTE = "\x00"
+  NULL_BYTE_STRING = "\\x00"
 
   class Relocation
-    RELOCATABLE_PATH_REGEX_PREFIX = T.let(/(?:(?<=-F|-I|-L|-isystem)|(?<![a-zA-Z0-9]))/, Regexp)
+    RELOCATABLE_PATH_REGEX_PREFIX = /(?:(?<=-F|-I|-L|-isystem)|(?<![a-zA-Z0-9]))/
 
     sig { void }
     def initialize
@@ -105,6 +109,10 @@ class Keg
         old: "/usr/local/var/homebrew",
         new: "#{PREFIX_PLACEHOLDER}/var/homebrew",
       },
+      var_www:      {
+        old: "/usr/local/var/www",
+        new: "#{PREFIX_PLACEHOLDER}/var/www",
+      },
       var_name:     {
         old: "/usr/local/var/#{name}",
         new: "#{PREFIX_PLACEHOLDER}/var/#{name}",
@@ -112,6 +120,10 @@ class Keg
       var_log_name: {
         old: "/usr/local/var/log/#{name}",
         new: "#{PREFIX_PLACEHOLDER}/var/log/#{name}",
+      },
+      var_lib_name: {
+        old: "/usr/local/var/lib/#{name}",
+        new: "#{PREFIX_PLACEHOLDER}/var/lib/#{name}",
       },
       var_run_name: {
         old: "/usr/local/var/run/#{name}",
@@ -207,7 +219,8 @@ class Keg
     files ||= text_files | libtool_files
 
     changed_files = T.let([], T::Array[Pathname])
-    files.map { path.join(_1) }.group_by { |f| f.stat.ino }.each_value do |first, *rest|
+    files.map { path.join(it) }.group_by { |f| f.stat.ino }.each_value do |first, *rest|
+      first = T.must(first)
       s = first.open("rb", &:read)
 
       # Use full prefix replacement for Homebrew-created files when using selective relocation
@@ -269,7 +282,7 @@ class Keg
 
         file.atomic_write patched_binary
       end
-      codesign_patched_binary(file)
+      codesign_patched_binary(file.to_s)
     end
   end
 
@@ -338,44 +351,38 @@ class Keg
     text_files = []
     return text_files if !which("file") || !which("xargs")
 
-    # file has known issues with reading files on other locales. Has
-    # been fixed upstream for some time, but a sufficiently new enough
-    # file with that fix is only available in macOS Sierra.
-    # https://bugs.gw.com/view.php?id=292
-    with_custom_locale("C") do
-      files = Set.new path.find.reject { |pn|
-        next true if pn.symlink?
-        next true if pn.directory?
-        next false if pn.basename.to_s == "orig-prefix.txt" # for python virtualenvs
-        next true if pn == self/".brew/#{name}.rb"
+    files = Set.new path.find.reject { |pn|
+      next true if pn.symlink?
+      next true if pn.directory?
+      next false if pn.basename.to_s == "orig-prefix.txt" # for python virtualenvs
+      next true if pn == self/".brew/#{name}.rb"
 
-        require "metafiles"
-        next true if Metafiles::EXTENSIONS.include?(pn.extname)
+      require "metafiles"
+      next true if Metafiles::EXTENSIONS.include?(pn.extname)
 
-        if pn.text_executable?
-          text_files << pn
-          next true
-        end
-        false
-      }
-      output, _status = Open3.capture2("xargs -0 file --no-dereference --print0",
-                                       stdin_data: files.to_a.join("\0"))
-      # `file` output sometimes contains data from the file, which may include
-      # invalid UTF-8 entities, so tell Ruby this is just a bytestring
-      output.force_encoding(Encoding::ASCII_8BIT)
-      output.each_line do |line|
-        path, info = line.split("\0", 2)
-        # `file` sometimes prints more than one line of output per file;
-        # subsequent lines do not contain a null-byte separator, so `info`
-        # will be `nil` for those lines
-        next unless info
-        next unless info.include?("text")
-
-        path = Pathname.new(path)
-        next unless files.include?(path)
-
-        text_files << path
+      if pn.text_executable?
+        text_files << pn
+        next true
       end
+      false
+    }
+    output, _status = Open3.capture2("xargs -0 file --no-dereference --print0",
+                                     stdin_data: files.to_a.join("\0"))
+    # `file` output sometimes contains data from the file, which may include
+    # invalid UTF-8 entities, so tell Ruby this is just a bytestring
+    output.force_encoding(Encoding::ASCII_8BIT)
+    output.each_line do |line|
+      path, info = line.split("\0", 2)
+      # `file` sometimes prints more than one line of output per file;
+      # subsequent lines do not contain a null-byte separator, so `info`
+      # will be `nil` for those lines
+      next unless info
+      next unless info.include?("text")
+
+      path = Pathname.new(path)
+      next unless files.include?(path)
+
+      text_files << path
     end
 
     text_files
@@ -417,6 +424,7 @@ class Keg
         next unless str.match? path_regex
 
         offset, match = str.split(" ", 2)
+        odie "Failed to parse strings output: #{str.inspect}" unless match
 
         # Some binaries contain strings with lists of files
         # e.g. `/usr/local/lib/foo:/usr/local/share/foo:/usr/lib/foo`

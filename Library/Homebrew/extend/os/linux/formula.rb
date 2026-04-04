@@ -23,7 +23,7 @@ module OS
         "$ORIGIN"
       end
 
-      sig { params(targets: T.nilable(T.any(Pathname, String))).void }
+      sig { params(targets: T.nilable(T.any(::Pathname, String))).void }
       def deuniversalize_machos(*targets); end
 
       sig { params(spec: SoftwareSpec).void }
@@ -48,7 +48,7 @@ module OS
 
       sig { returns(T::Boolean) }
       def valid_platform?
-        requirements.none?(MacOSRequirement)
+        requirements.none? { |r| r.is_a?(MacOSRequirement) && !r.version_specified? }
       end
     end
   end

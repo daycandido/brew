@@ -19,7 +19,7 @@ module Cask
     sig { returns(T.nilable(T::Hash[String, String])) }
     attr_reader :cookies, :data
 
-    sig { returns(T.nilable(T.any(String, T::Array[String]))) }
+    sig { returns(T.nilable(T::Array[String])) }
     attr_reader :header
 
     sig { returns(T.nilable(T.any(URI::Generic, String))) }
@@ -31,7 +31,7 @@ module Cask
     sig { returns(T.nilable(T.any(Symbol, String))) }
     attr_reader :user_agent
 
-    sig { returns(T.any(T::Class[AbstractDownloadStrategy], Symbol, NilClass)) }
+    sig { returns(T.nilable(T.any(T::Class[AbstractDownloadStrategy], Symbol))) }
     attr_reader :using
 
     sig { returns(T.nilable(String)) }
@@ -48,7 +48,7 @@ module Cask
       params(
         uri:             T.any(URI::Generic, String),
         verified:        T.nilable(String),
-        using:           T.any(T::Class[AbstractDownloadStrategy], Symbol, NilClass),
+        using:           T.nilable(T.any(T::Class[AbstractDownloadStrategy], Symbol)),
         tag:             T.nilable(String),
         branch:          T.nilable(String),
         revisions:       T.nilable(T::Hash[T.any(Symbol, String), String]),
@@ -74,7 +74,7 @@ module Cask
 
       specs = {}
       specs[:verified]   = @verified   = T.let(verified, T.nilable(String))
-      specs[:using]      = @using      = T.let(using, T.any(T::Class[AbstractDownloadStrategy], Symbol, NilClass))
+      specs[:using]      = @using      = T.let(using, T.nilable(T.any(T::Class[AbstractDownloadStrategy], Symbol)))
       specs[:tag]        = @tag        = T.let(tag, T.nilable(String))
       specs[:branch]     = @branch     = T.let(branch, T.nilable(String))
       specs[:revisions]  = @revisions  = T.let(revisions, T.nilable(T::Hash[T.any(Symbol, String), String]))
@@ -83,13 +83,13 @@ module Cask
       specs[:cookies]    =
         @cookies = T.let(cookies&.transform_keys(&:to_s), T.nilable(T::Hash[String, String]))
       specs[:referer]    = @referer    = T.let(referer, T.nilable(T.any(URI::Generic, String)))
-      specs[:headers]    = @header     = T.let(header, T.nilable(T.any(String, T::Array[String])))
+      specs[:headers]    = @header     = T.let(header, T.nilable(T::Array[String]))
       specs[:user_agent] = @user_agent = T.let(user_agent || :default, T.nilable(T.any(Symbol, String)))
       specs[:data]       = @data       = T.let(data, T.nilable(T::Hash[String, String]))
       specs[:only_path]  = @only_path  = T.let(only_path, T.nilable(String))
 
       @specs = T.let(specs.compact, T::Hash[Symbol, T.untyped])
-      @caller_location = T.let(caller_location, Thread::Backtrace::Location)
+      @caller_location = caller_location
     end
 
     sig { returns(Homebrew::SourceLocation) }

@@ -6,7 +6,7 @@ require "downloadable"
 module Homebrew
   module API
     class JSONDownloadStrategy < AbstractDownloadStrategy
-      sig { params(url: String, name: String, version: T.any(NilClass, String, Version), meta: T.untyped).void }
+      sig { params(url: String, name: String, version: T.nilable(T.any(String, Version)), meta: T.untyped).void }
       def initialize(url, name, version, **meta)
         super
         @target = T.let(meta.fetch(:target), Pathname)
@@ -19,6 +19,11 @@ module Homebrew
           Homebrew::API.fetch_json_api_file(url, target: cached_location, stale_seconds: meta[:stale_seconds])
         end
         cached_location
+      end
+
+      sig { override.returns(T.nilable(Integer)) }
+      def fetched_size
+        File.size?(cached_location)
       end
 
       sig { override.returns(Pathname) }

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "livecheck/livecheck"
@@ -253,23 +254,39 @@ RSpec.describe Homebrew::Livecheck::SkipConditions do
             livecheck_defined: true,
           },
         },
+        skip_with_messages:  {
+          formula:  "test_skip_with_messages",
+          status:   "skipped",
+          messages: ["First message", "Second message"],
+          meta:     {
+            livecheck_defined: true,
+          },
+        },
+        error_with_messages: {
+          formula:  "test_error_with_messages",
+          status:   "error",
+          messages: ["First error", "Second error"],
+          meta:     {
+            livecheck_defined: true,
+          },
+        },
       },
       cask:    {
-        deprecated:        {
+        deprecated:          {
           cask:   "test_deprecated",
           status: "deprecated",
           meta:   {
             livecheck_defined: false,
           },
         },
-        disabled:          {
+        disabled:            {
           cask:   "test_disabled",
           status: "disabled",
           meta:   {
             livecheck_defined: false,
           },
         },
-        extract_plist:     {
+        extract_plist:       {
           cask:     "test_extract_plist_skip",
           status:   "skipped",
           messages: ["Use `--extract-plist` to enable checking multiple casks with ExtractPlist strategy"],
@@ -277,31 +294,47 @@ RSpec.describe Homebrew::Livecheck::SkipConditions do
             livecheck_defined: true,
           },
         },
-        latest:            {
+        latest:              {
           cask:   "test_latest",
           status: "latest",
           meta:   {
             livecheck_defined: false,
           },
         },
-        unversioned:       {
+        unversioned:         {
           cask:   "test_unversioned",
           status: "unversioned",
           meta:   {
             livecheck_defined: false,
           },
         },
-        skip:              {
+        skip:                {
           cask:   "test_skip",
           status: "skipped",
           meta:   {
             livecheck_defined: true,
           },
         },
-        skip_with_message: {
+        skip_with_message:   {
           cask:     "test_skip_with_message",
           status:   "skipped",
           messages: ["Not maintained"],
+          meta:     {
+            livecheck_defined: true,
+          },
+        },
+        skip_with_messages:  {
+          cask:     "test_skip_with_messages",
+          status:   "skipped",
+          messages: ["First message", "Second message"],
+          meta:     {
+            livecheck_defined: true,
+          },
+        },
+        error_with_messages: {
+          cask:     "test_error_with_messages",
+          status:   "error",
+          messages: ["First error", "Second error"],
           meta:     {
             livecheck_defined: true,
           },
@@ -618,6 +651,22 @@ RSpec.describe Homebrew::Livecheck::SkipConditions do
       end
     end
 
+    context "when a formula produces multiple messages" do
+      it "prints skip information" do
+        expect do
+          skip_conditions.print_skip_information(status_hashes[:formula][:skip_with_messages])
+        end.to output(
+          "test_skip_with_messages: skipped - First message; Second message\n",
+        ).to_stdout.and not_to_output.to_stderr
+
+        expect do
+          skip_conditions.print_skip_information(status_hashes[:formula][:error_with_messages])
+        end.to output(
+          "test_error_with_messages: First error; Second error\n",
+        ).to_stdout.and not_to_output.to_stderr
+      end
+    end
+
     context "when the cask is deprecated without a `livecheck` block" do
       it "prints skip information" do
         expect { skip_conditions.print_skip_information(status_hashes[:cask][:deprecated]) }
@@ -659,6 +708,22 @@ RSpec.describe Homebrew::Livecheck::SkipConditions do
         expect { skip_conditions.print_skip_information(status_hashes[:cask][:skip_with_message]) }
           .to output("test_skip_with_message: skipped - Not maintained\n").to_stdout
           .and not_to_output.to_stderr
+      end
+    end
+
+    context "when a cask produces multiple messages" do
+      it "prints skip information" do
+        expect do
+          skip_conditions.print_skip_information(status_hashes[:cask][:skip_with_messages])
+        end.to output(
+          "test_skip_with_messages: skipped - First message; Second message\n",
+        ).to_stdout.and not_to_output.to_stderr
+
+        expect do
+          skip_conditions.print_skip_information(status_hashes[:cask][:error_with_messages])
+        end.to output(
+          "test_error_with_messages: First error; Second error\n",
+        ).to_stdout.and not_to_output.to_stderr
       end
     end
 

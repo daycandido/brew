@@ -136,8 +136,11 @@ and are now no longer needed.
 
 ### `bundle` \[*`subcommand`*\]
 
-Bundler for non-Ruby dependencies from Homebrew, Homebrew Cask, Mac App Store,
-Whalebrew and Visual Studio Code (and forks/variants).
+Bundler for non-Ruby dependencies from Homebrew, Homebrew Cask, Mac App Store
+dependencies, VSCode (and forks/variants) extensions, Go packages, Cargo
+packages, uv tools, Flatpak packages, Krew plugins and npm packages.
+
+Note: Flatpak support is only available on Linux.
 
 `brew bundle` \[`install`\]
 
@@ -149,8 +152,7 @@ You can specify the `Brewfile` location using `--file` or by setting the
 You can skip the installation of dependencies by adding space-separated values
 to one or more of the following environment variables:
 `$HOMEBREW_BUNDLE_BREW_SKIP`, `$HOMEBREW_BUNDLE_CASK_SKIP`,
-`$HOMEBREW_BUNDLE_MAS_SKIP`, `$HOMEBREW_BUNDLE_WHALEBREW_SKIP`,
-`$HOMEBREW_BUNDLE_TAP_SKIP`.
+`$HOMEBREW_BUNDLE_MAS_SKIP`, `$HOMEBREW_BUNDLE_TAP_SKIP`.
 
 `brew bundle upgrade`
 
@@ -191,16 +193,18 @@ By default, only Homebrew formula dependencies are listed.
 `brew bundle add` *`name`* \[...\]
 
 : Add entries to your `Brewfile`. Adds formulae by default. Use `--cask`,
-  `--tap`, `--whalebrew` or `--vscode` to add the corresponding entry instead.
+  `--tap`, `--vscode`, `--go`, `--cargo`, `--uv`, `--flatpak`, `--krew` and
+  `--npm` to add the corresponding entry instead.
 
 `brew bundle remove` *`name`* \[...\]
 
 : Remove entries that match `name` from your `Brewfile`. Use `--formula`,
-  `--cask`, `--tap`, `--mas`, `--whalebrew` or `--vscode` to remove only entries
-  of the corresponding type. Passing `--formula` also removes matches against
-  formula aliases and old formula names.
+  `--cask`, `--tap`, `--mas`, `--vscode`, `--go`, `--cargo`, `--uv`,
+  `--flatpak`, `--krew` and `--npm` to remove only entries of the corresponding
+  type. Passing `--formula` also removes matches against formula aliases and old
+  formula names.
 
-`brew bundle exec` \[`--check`\] *`command`*
+`brew bundle exec` \[`--check`\] \[`--no-secrets`\] *`command`*
 
 : Run an external command in an isolated build environment based on the
   `Brewfile` dependencies.
@@ -211,11 +215,11 @@ commands like `bundle install`, `npm install`, etc. It will also add compiler
 flags which will help with finding keg-only dependencies like `openssl`,
 `icu4c`, etc.
 
-`brew bundle sh` \[`--check`\]
+`brew bundle sh` \[`--check`\] \[`--no-secrets`\]
 
 : Run your shell in a `brew bundle exec` environment.
 
-`brew bundle env` \[`--check`\]
+`brew bundle env` \[`--check`\] \[`--no-secrets`\]
 
 : Print the environment variables that would be set in a `brew bundle exec`
   environment.
@@ -225,7 +229,7 @@ flags which will help with finding keg-only dependencies like `openssl`,
 : Read from or write to the `Brewfile` from this location. Use `--file=-` to
   pipe to stdin/stdout.
 
-`--global`
+`-g`, `--global`
 
 : Read from or write to the `Brewfile` from `$HOMEBREW_BUNDLE_FILE_GLOBAL` (if
   set), `${XDG_CONFIG_HOME}/homebrew/Brewfile` (if `$XDG_CONFIG_HOME` is set),
@@ -293,24 +297,74 @@ flags which will help with finding keg-only dependencies like `openssl`,
 
 : `list` or `dump` Mac App Store dependencies.
 
-`--whalebrew`
-
-: `list` or `dump` Whalebrew dependencies.
-
 `--vscode`
 
 : `list`, `dump` or `cleanup` VSCode (and forks/variants) extensions.
+
+`--go`
+
+: `list`, `dump` or `cleanup` Go packages.
+
+`--cargo`
+
+: `list`, `dump` or `cleanup` Cargo packages.
+
+`--uv`
+
+: `list`, `dump` or `cleanup` uv tools.
+
+`--flatpak`
+
+: `list`, `dump` or `cleanup` Flatpak packages. Note: Linux only.
+
+`--krew`
+
+: `list` or `dump` Krew plugins.
+
+`--npm`
+
+: `list`, `dump` or `cleanup` npm packages.
 
 `--no-vscode`
 
 : `dump` without VSCode (and forks/variants) extensions. Enabled by default if
   `$HOMEBREW_BUNDLE_DUMP_NO_VSCODE` is set.
 
+`--no-go`
+
+: `dump` without Go packages. Enabled by default if
+  `$HOMEBREW_BUNDLE_DUMP_NO_GO` is set.
+
+`--no-cargo`
+
+: `dump` without Cargo packages. Enabled by default if
+  `$HOMEBREW_BUNDLE_DUMP_NO_CARGO` is set.
+
+`--no-uv`
+
+: `dump` without uv tools. Enabled by default if `$HOMEBREW_BUNDLE_DUMP_NO_UV`
+  is set.
+
+`--no-flatpak`
+
+: `dump` without Flatpak packages. Enabled by default if
+  `$HOMEBREW_BUNDLE_DUMP_NO_FLATPAK` is set.
+
+`--no-krew`
+
+: `dump` without Krew plugins. Enabled by default if
+  `$HOMEBREW_BUNDLE_DUMP_NO_KREW` is set.
+
+`--no-npm`
+
+: `dump` without npm packages. Enabled by default if
+  `$HOMEBREW_BUNDLE_DUMP_NO_NPM` is set.
+
 `--describe`
 
-: `dump` adds a description comment above each line, unless the dependency does
-  not have a description. Enabled by default if `$HOMEBREW_BUNDLE_DUMP_DESCRIBE`
-  is set.
+: `dump` and `add` add a description comment above each line, unless the
+  dependency does not have a description. Enabled by default if
+  `$HOMEBREW_BUNDLE_DESCRIBE` is set.
 
 `--no-restart`
 
@@ -323,7 +377,12 @@ flags which will help with finding keg-only dependencies like `openssl`,
 `--check`
 
 : Check that all dependencies in the Brewfile are installed before running
-  `exec`, `sh`, or `env`.
+  `exec`, `sh`, or `env`. Enabled by default if `$HOMEBREW_BUNDLE_CHECK` is set.
+
+`--no-secrets`
+
+: Attempt to remove secrets from the environment before `exec`, `sh`, or `env`.
+  Enabled by default if `$HOMEBREW_BUNDLE_NO_SECRETS` is set.
 
 ### `casks`
 
@@ -440,7 +499,8 @@ passed, this command displays their actual runtime dependencies (similar to
 
 `--include-test`
 
-: Include `:test` dependencies for *`formula`* (non-recursive).
+: Include `:test` dependencies for *`formula`* (non-recursive unless `--graph`
+  or `--tree`).
 
 `--skip-recommended`
 
@@ -635,11 +695,6 @@ binaries for *`cask`*s. For files, also print SHA-256 checksums.
 
 : Download a bottle if it exists for the current or newest version of macOS,
   even if it would not be used during installation.
-
-`--[no-]quarantine`
-
-: Disable/enable quarantining of downloads (default: enabled). Enabled by
-  default if `$HOMEBREW_CASK_OPTS_QUARANTINE` is set.
 
 `--formula`
 
@@ -909,11 +964,6 @@ upgrade *`formula`* if it is already installed but outdated.
 
 : Require all casks to have a checksum. Enabled by default if
   `$HOMEBREW_CASK_OPTS_REQUIRE_SHA` is set.
-
-`--[no-]quarantine`
-
-: Disable/enable quarantining of downloads (default: enabled). Enabled by
-  default if `$HOMEBREW_CASK_OPTS_QUARANTINE` is set.
 
 `--adopt`
 
@@ -1327,11 +1377,6 @@ for the reinstalled formulae or, every 30 days, for all formulae.
 : Require all casks to have a checksum. Enabled by default if
   `$HOMEBREW_CASK_OPTS_REQUIRE_SHA` is set.
 
-`--[no-]quarantine`
-
-: Disable/enable quarantining of downloads (default: enabled). Enabled by
-  default if `$HOMEBREW_CASK_OPTS_QUARANTINE` is set.
-
 `--adopt`
 
 : Adopt existing artifacts in the destination that are identical to those being
@@ -1510,11 +1555,22 @@ are also exported to avoid querying them multiple times. To help guarantee
 idempotence, this command produces no output when Homebrew's `bin` and `sbin`
 directories are first and second respectively in your `$PATH`. Consider adding
 evaluation of this command's output to your dotfiles (e.g. `~/.bash_profile` or
-~/.zprofile` on macOS and ~/.bashrc` or ~/.zshrc` on Linux) with:
-  `eval "$(brew shellenv)"\`
+~/.zprofile` on macOS and ~/.bashrc` or ~/.zshrc` on Linux)
+with e.g.:
+  `eval "$(brew shellenv zsh)"` or `eval "$(brew shellenv bash)"\`
 
-The shell can be specified explicitly with a supported shell name parameter.
-Unknown shells will output POSIX exports.
+The shell should be specified explicitly with a supported shell name parameter
+but will be detected automatically if not provided (but this may not be
+correct). Unknown shells will output POSIX exports.
+
+### `source` \[*`formula`* ...\]
+
+Open a *`formula`*'s source repository in a browser, or open Homebrew's own
+repository if no argument is provided.
+
+The repository URL is determined from the formula's head URL, stable URL, or
+homepage. Supports GitHub, GitLab, Bitbucket, Codeberg and SourceHut
+repositories.
 
 ### `tab` \[*`options`*\] *`installed_formula`*\|*`installed_cask`* \[...\]
 
@@ -1795,11 +1851,6 @@ for the upgraded formulae or, every 30 days, for all formulae.
 : Require all casks to have a checksum. Enabled by default if
   `$HOMEBREW_CASK_OPTS_REQUIRE_SHA` is set.
 
-`--[no-]quarantine`
-
-: Disable/enable quarantining of downloads (default: enabled). Enabled by
-  default if `$HOMEBREW_CASK_OPTS_QUARANTINE` is set.
-
 ### `uses` \[*`options`*\] *`formula`* \[...\]
 
 Show formulae and casks that specify *`formula`* as a dependency; that is, show
@@ -1855,6 +1906,12 @@ dependency for their stable builds.
 `--cask`
 
 : Include only casks.
+
+### `version-install` *`formula`*\[@*`version`*\] \[*`version`*\]
+
+Extract a specific *`version`* of *`formula`* into a personal tap and install
+it. The default tap is *`user`*/versions. *`user`* uses the GitHub username if
+available and the local username otherwise.
 
 ### `which-formula` \[`--explain`\] \[`--skip-update`\] *`command`* \[...\]
 
@@ -1969,6 +2026,10 @@ Display where Homebrew's Git repository is located.
 If *`user`*`/`*`repo`* are provided, display where tap *`user`*`/`*`repo`*'s
 directory is located.
 
+### `--taps`
+
+Display the path to Homebrew’s Taps directory.
+
 ### `--version`, `-v`
 
 Print the version numbers of Homebrew, Homebrew/homebrew-core and
@@ -2021,6 +2082,10 @@ checks. Will exit with a non-zero status if any errors are found.
 `--[no-]signing`
 
 : Audit for app signatures, which are required by macOS on ARM.
+
+`--changed`
+
+: Check files that were changed from the `main` branch.
 
 `--tap`
 
@@ -2428,7 +2493,7 @@ Display the source of a *`formula`* or *`cask`*.
 
 : Treat all named arguments as casks.
 
-### `contributions` \[`--user=`\] \[`--repositories=`\] \[`--from=`\] \[`--to=`\] \[`--csv`\]
+### `contributions` \[`--user=`\] \[`--repositories=`\] \[`--quarter=`\] \[`--from=`\] \[`--to=`\] \[`--csv`\]
 
 Summarise contributions to Homebrew repositories.
 
@@ -2454,6 +2519,11 @@ Summarise contributions to Homebrew repositories.
 : Specify the team to populate users from. The first part of the team name will
   be used as the organisation.
 
+`--quarter`
+
+: Homebrew contributions quarter to search (1-4). Omitting this flag searches
+  the past year. If `--from` or `--to` are set, they take precedence.
+
 `--from`
 
 : Date (ISO 8601 format) to start searching contributions. Omitting this flag
@@ -2473,7 +2543,7 @@ Generate a formula or, with `--cask`, a cask for the downloadable file at
 *`URL`* and open it in the editor. Homebrew will attempt to automatically derive
 the formula name and version, but if it fails, you'll have to make your own
 template. The `wget` formula serves as a simple example. For the complete API,
-see: <https://rubydoc.brew.sh/Formula>
+see: <https://docs.brew.sh/rubydoc/Formula>
 
 `--autotools`
 
@@ -2751,9 +2821,32 @@ generated files are written to the current directory.
 
 : Generate API data without writing it to files.
 
-### `generate-man-completions`
+### `generate-man-completions` \[`--no-exit-code`\]
 
 Generate Homebrew's manpages and shell completions.
+
+`--no-exit-code`
+
+: Exit with code 0 even if no changes were made.
+
+### `generate-zap` \[`--name`\] *`cask_or_name`*
+
+Generate a `zap` stanza for a cask by scanning the system for associated files
+and directories.
+
+Accepts a cask token (e.g. `firefox`) or, with `--name`, a raw application name
+string (e.g. `Firefox`). When a cask token is given, the application name is
+resolved from the cask's `app` artifact.
+
+The target application should have been launched at least once so that
+preference files and caches exist on disk.
+
+Outputs `trash`, `delete`, and `rmdir` directives suitable for pasting into a
+cask definition.
+
+`--name`
+
+: Treat the argument as a raw application name instead of a cask token.
 
 ### `install-bundler-gems` \[`--groups=`\] \[`--add-groups=`\]
 
@@ -2780,6 +2873,15 @@ Enter the interactive Homebrew Ruby shell.
 `--pry`
 
 : Use Pry instead of IRB. Enabled by default if `$HOMEBREW_PRY` is set.
+
+### `lgtm` \[`--online`\]
+
+Run `brew typecheck`, `brew style --changed` and `brew tests --changed` in one
+go.
+
+`--online`
+
+: Run additional, slower checks that require a network connection.
 
 ### `linkage` \[*`options`*\] \[*`installed_formula`* ...\]
 
@@ -3076,7 +3178,7 @@ Run Homebrew with a Ruby profiler. For example, `brew prof readall`.
 
 : Use `vernier` instead of `ruby-prof` (the default).
 
-### `release` \[`--major`\] \[`--minor`\]
+### `release` \[*`options`*\]
 
 Create a new draft Homebrew/brew release with the appropriate version number and
 release notes.
@@ -3085,6 +3187,9 @@ By default, `brew release` will bump the patch version number. Pass `--major` or
 `--minor` to bump the major or minor version numbers, respectively. The command
 will fail if the previous major or minor release was made less than one month
 ago.
+
+Without `--force`, this command will just output the release notes without
+creating the release or triggering the workflow.
 
 *Note:* Requires write access to the Homebrew/brew repository.
 
@@ -3095,6 +3200,11 @@ ago.
 `--minor`
 
 : Create a minor release.
+
+`--force`
+
+: Actually create the release and trigger the workflow. Without this, just show
+  what would be done.
 
 ### `rubocop`
 
@@ -3127,13 +3237,22 @@ Generate Homebrew's RubyDoc documentation.
 
 : Open generated documentation in a browser.
 
-### `sh` \[`--env=`\] \[`--cmd=`\] \[*`file`*\]
+### `sh` \[*`options`*\] \[*`file`*\]
 
 Enter an interactive shell for Homebrew's build environment. Use
 years-battle-hardened build logic to help your `./configure && make && make
 install` and even your `gem install` succeed. Especially handy if you run
 Homebrew in an Xcode-only configuration since it adds tools like `make` to your
 `$PATH` which build systems would not find otherwise.
+
+With `--ruby`, enter an interactive shell for Homebrew's Ruby environment. This
+sets up the correct Ruby paths, `$GEM_HOME` and bundle configuration used by
+Homebrew's development tools. The environment includes gems from the installed
+groups, making tools like RuboCop, Sorbet and RSpec available via `bundle exec`.
+
+`-r`, `--ruby`
+
+: Set up Homebrew's Ruby environment.
 
 `--env`
 
@@ -3154,6 +3273,11 @@ core code and all formulae.
 `--fix`
 
 : Fix style violations automatically using RuboCop's auto-correct feature.
+
+`--todo`
+
+: Add `rubocop:todo` comments for RuboCop violations that remain after
+  auto-correction. Requires `--fix`.
 
 `--reset-cache`
 
@@ -3246,10 +3370,6 @@ and Linux workers.
 `--cleanup`
 
 : Clean all state from the Homebrew directory. Use with care!
-
-`--concurrent-downloads`
-
-: Invoke `brew` with `HOMEBREW_DOWNLOAD_CONCURRENCY=auto`.
 
 `--skip-setup`
 
@@ -3360,7 +3480,7 @@ and Linux workers.
 
 `--only-cleanup-before`
 
-: Only run the pre-cleanup step. Needs `--cleanup`.
+: Only run the pre-cleanup step. Needs `--cleanup`, except in GitHub Actions.
 
 `--only-setup`
 
@@ -3395,7 +3515,7 @@ and Linux workers.
 
 `--only-cleanup-after`
 
-: Only run the post-cleanup step. Needs `--cleanup`.
+: Only run the post-cleanup step. Needs `--cleanup`, except in GitHub Actions.
 
 `--testing-formulae`
 
@@ -3451,6 +3571,18 @@ Run Homebrew's unit and integration tests.
 
 : Run tests serially.
 
+`--stackprof`
+
+: Use `stackprof` to profile tests.
+
+`--vernier`
+
+: Use `vernier` to profile tests.
+
+`--ruby-prof`
+
+: Use `ruby-prof` to profile tests.
+
 `--only`
 
 : Run only `<test_script>_spec.rb`. Appending `:<line_number>` will start at a
@@ -3458,7 +3590,8 @@ Run Homebrew's unit and integration tests.
 
 `--profile`
 
-: Run the test suite serially to find the *`n`* slowest tests.
+: Output the *`n`* slowest tests. When run without `--no-parallel` this will
+  output the slowest tests for each parallel test process.
 
 `--seed`
 
@@ -3968,10 +4101,6 @@ command execution (e.g. `$(cat file)`).
   
   *Default:* `https://github.com/Homebrew/brew`.
 
-`HOMEBREW_BREW_WRAPPER`
-
-: If set, use wrapper to call `brew` rather than auto-detecting it.
-
 `HOMEBREW_BROWSER`
 
 : Use this as the browser when opening project homepages.
@@ -3992,9 +4121,9 @@ command execution (e.g. `$(cat file)`).
 `HOMEBREW_CASK_OPTS`
 
 : Append these options to all `cask` commands. All `--*dir` options,
-  `--language`, `--require-sha`, `--no-quarantine` and `--no-binaries` are
-  supported. For example, you might add something like the following to your
-  `~/.profile`, `~/.bash_profile`, or `~/.zshenv`:
+  `--language`, `--require-sha` and `--no-binaries` are supported. For example,
+  you might add something like the following to your `~/.profile`,
+  `~/.bash_profile`, or `~/.zshenv`:
   
   `export HOMEBREW_CASK_OPTS="--appdir=${HOME}/Applications
   --fontdir=/Library/Fonts"`
@@ -4078,8 +4207,10 @@ command execution (e.g. `$(cat file)`).
 `HOMEBREW_DOCKER_REGISTRY_BASIC_AUTH_TOKEN`
 
 : Use this base64 encoded username and password for authenticating with a Docker
-  registry proxying GitHub Packages. If `$HOMEBREW_DOCKER_REGISTRY_TOKEN` is
-  set, it will be used instead.
+  registry proxying GitHub Packages. If set to `none`, no authentication header
+  will be sent. This can be used, if remote `$HOMEBREW_BOTTLE_DOMAIN` does not
+  support any authentication. If `$HOMEBREW_DOCKER_REGISTRY_TOKEN` is set, it
+  will be used instead.
 
 `HOMEBREW_DOCKER_REGISTRY_TOKEN`
 
@@ -4088,12 +4219,12 @@ command execution (e.g. `$(cat file)`).
 
 `HOMEBREW_DOWNLOAD_CONCURRENCY`
 
-: If set, Homebrew will download in parallel using this many concurrent
-  connections. Setting to `auto` will use twice the number of available CPU
-  cores (what our benchmarks showed to produce the best performance). If set to
-  `1` (the default), Homebrew will download in serial.
+: Homebrew will download in parallel using this many concurrent connections. The
+  default, `auto`, will use twice the number of available CPU cores (what our
+  benchmarks showed to produce the best performance). If set to `1`, Homebrew
+  will download in serial.
   
-  *Default:* `1`.
+  *Default:* `auto`.
 
 `HOMEBREW_EDITOR`
 
@@ -4198,6 +4329,11 @@ command execution (e.g. `$(cat file)`).
 
 : If set, require `brew` to be invoked by the value of
   `$HOMEBREW_FORCE_BREW_WRAPPER` for non-trivial `brew` commands.
+
+`HOMEBREW_FORCE_BREW_WRAPPER_HELP_MESSAGE`
+
+: If set, appended to the `$HOMEBREW_FORCE_BREW_WRAPPER` error message to
+  provide additional help or context to the user.
 
 `HOMEBREW_FORCE_VENDOR_RUBY`
 
@@ -4353,7 +4489,8 @@ command execution (e.g. `$(cat file)`).
 
 `HOMEBREW_NO_FORCE_BREW_WRAPPER`
 
-: If set, disables `$HOMEBREW_FORCE_BREW_WRAPPER` behaviour, even if set.
+: `Deprecated:` If set, disables `$HOMEBREW_FORCE_BREW_WRAPPER` behaviour, even
+  if set.
 
 `HOMEBREW_NO_GITHUB_API`
 
@@ -4484,6 +4621,10 @@ command execution (e.g. `$(cat file)`).
 : A space-separated list of casks. Homebrew will act as if `--greedy` was passed
   when upgrading any cask on this list.
 
+`HOMEBREW_USE_INTERNAL_API`
+
+: If set, test the new beta internal API for fetching formula and cask data.
+
 `HOMEBREW_VERBOSE`
 
 : If set, always assume `--verbose` when running commands.
@@ -4547,7 +4688,7 @@ And for an authenticated HTTP proxy:
 
 Homebrew Documentation: <https://docs.brew.sh>
 
-Homebrew API: <https://rubydoc.brew.sh>
+Homebrew API: <https://docs.brew.sh/rubydoc/>
 
 `git`(1), `git-log`(1)
 
@@ -4555,20 +4696,16 @@ Homebrew API: <https://rubydoc.brew.sh>
 
 Homebrew's Project Leader is Mike McQuaid.
 
-Homebrew's Project Leadership Committee is Colin Dean, Michka Popoff, Mike
-McQuaid, Patrick Linnane and Vanessa Gennarelli.
+Homebrew's Lead Maintainers are Bevan Kay, Bo Anderson, Branch Vincent, Carlo
+Cabrera, Dustin Rodrigues, FX Coudert, Issy Long, Justin Krehel, Michael Cho,
+Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick Linnane, Rui Chen, Ruoyu
+Zhong, Sam Ford, Sean Molenaar and Thierry Moisan.
 
-Homebrew's Technical Steering Committee is Bo Anderson, Issy Long, Michael Cho,
-Mike McQuaid and Ruoyu Zhong.
+Homebrew's other Maintainers are Anton Melnikov, Caleb Xu, Daeho Ro, Douglas
+Eichelberger, Eric Knibbe, Klaus Hipp, Markus Reiter, Rylan Polster, Štefan
+Baebler and William Woodruff.
 
-Homebrew's maintainers are Anton Melnikov, Bevan Kay, Bo Anderson, Branch
-Vincent, Caleb Xu, Carlo Cabrera, Daeho Ro, Douglas Eichelberger, Dustin
-Rodrigues, Eric Knibbe, FX Coudert, Issy Long, Justin Krehel, Klaus Hipp, Markus
-Reiter, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick
-Linnane, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam Ford, Sean Molenaar, Štefan
-Baebler, Thierry Moisan and William Woodruff.
-
-Former maintainers with significant contributions include Alexander Bayandin,
+Former Maintainers with significant contributions include Alexander Bayandin,
 Miccal Matthews, Misty De Méo, Shaun Jackman, Vítor Galvão, Claudia Pellegrino,
 Seeker, Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste
 Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack

@@ -6,6 +6,7 @@
 --prefix
 --repo
 --repository
+--taps
 --version
 -S
 -v
@@ -52,6 +53,7 @@ generate-cask-api
 generate-cask-ci-matrix
 generate-formula-api
 generate-man-completions
+generate-zap
 gist-logs
 help
 home
@@ -62,6 +64,7 @@ install-bundler-gems
 irb
 lc
 leaves
+lgtm
 link
 linkage
 list
@@ -76,7 +79,6 @@ nodenv-sync
 options
 outdated
 pin
-portable-package
 post_install
 postinstall
 pr-automerge
@@ -99,6 +101,7 @@ services
 setup-ruby
 sh
 shellenv
+source
 style
 tab
 tap
@@ -131,5 +134,6 @@ uses
 vendor-gems
 vendor-install
 verify
+version-install
 which-formula
 which-update

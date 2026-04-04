@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "cmd/shared_examples/args_parse"
@@ -24,7 +25,7 @@ RSpec.describe Homebrew::DevCmd::Irb do
       RUBY
 
       expect { brew "irb", irb_test }
-        .to output(/Interactive Homebrew Shell/).to_stdout
+        .to output(/Interactive Homebrew Shell.*<Formula testball \(stable\)/m).to_stdout
         .and not_to_output.to_stderr
         .and be_a_success
 

@@ -2,7 +2,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
-require "pathname"
+require "bundle/dsl"
+require "bundle/package_types"
 
 module Homebrew
   module Bundle
@@ -16,54 +17,48 @@ module Homebrew
 
       sig {
         params(
-          describe:   T::Boolean,
-          no_restart: T::Boolean,
-          formulae:   T::Boolean,
-          taps:       T::Boolean,
-          casks:      T::Boolean,
-          mas:        T::Boolean,
-          whalebrew:  T::Boolean,
-          vscode:     T::Boolean,
+          describe:        T::Boolean,
+          no_restart:      T::Boolean,
+          formulae:        T::Boolean,
+          taps:            T::Boolean,
+          casks:           T::Boolean,
+          extension_types: Homebrew::Bundle::ExtensionTypes,
         ).returns(String)
       }
-      def self.build_brewfile(describe:, no_restart:, formulae:, taps:, casks:, mas:, whalebrew:, vscode:)
-        require "bundle/tap_dumper"
-        require "bundle/formula_dumper"
-        require "bundle/cask_dumper"
-        require "bundle/mac_app_store_dumper"
-        require "bundle/whalebrew_dumper"
-        require "bundle/vscode_extension_dumper"
-
+      def self.build_brewfile(describe:, no_restart:, formulae:, taps:, casks:, extension_types: {})
+        selected_package_types = extension_types.dup
+        selected_package_types[:tap] = taps
+        selected_package_types[:brew] = formulae
+        selected_package_types[:cask] = casks
         content = []
-        content << TapDumper.dump if taps
-        content << FormulaDumper.dump(describe:, no_restart:) if formulae
-        content << CaskDumper.dump(describe:) if casks
-        content << MacAppStoreDumper.dump if mas
-        content << WhalebrewDumper.dump if whalebrew
-        content << VscodeExtensionDumper.dump if vscode
+        Homebrew::Bundle.dump_package_types.select(&:dump_supported?).each do |package_type|
+          next unless selected_package_types.fetch(package_type.type, false)
+
+          content << package_type.dump_output(describe:, no_restart:)
+        end
         "#{content.reject(&:empty?).join("\n")}\n"
       end
 
       sig {
         params(
-          global:     T::Boolean,
-          file:       T.nilable(String),
-          describe:   T::Boolean,
-          force:      T::Boolean,
-          no_restart: T::Boolean,
-          formulae:   T::Boolean,
-          taps:       T::Boolean,
-          casks:      T::Boolean,
-          mas:        T::Boolean,
-          whalebrew:  T::Boolean,
-          vscode:     T::Boolean,
+          global:          T::Boolean,
+          file:            T.nilable(String),
+          describe:        T::Boolean,
+          force:           T::Boolean,
+          no_restart:      T::Boolean,
+          formulae:        T::Boolean,
+          taps:            T::Boolean,
+          casks:           T::Boolean,
+          extension_types: Homebrew::Bundle::ExtensionTypes,
         ).void
       }
-      def self.dump_brewfile(global:, file:, describe:, force:, no_restart:, formulae:, taps:, casks:, mas:,
-                             whalebrew:, vscode:)
+      def self.dump_brewfile(global:, file:, describe:, force:, no_restart:, formulae:, taps:, casks:,
+                             extension_types: {})
         path = brewfile_path(global:, file:)
         can_write_to_brewfile?(path, force:)
-        content = build_brewfile(describe:, no_restart:, taps:, formulae:, casks:, mas:, whalebrew:, vscode:)
+        content = build_brewfile(
+          describe:, no_restart:, taps:, formulae:, casks:, extension_types:,
+        )
         write_file path, content
       end
 

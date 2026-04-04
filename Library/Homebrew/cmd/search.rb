@@ -156,6 +156,7 @@ module Homebrew
       sig { params(query: String, found_matches: T::Boolean).void }
       def print_missing_formula_help(query, found_matches)
         return unless $stdout.tty?
+        return if query.match?(Search::QUERY_REGEX)
 
         reason = MissingFormula.reason(query, silent: true)
         return if reason.nil?

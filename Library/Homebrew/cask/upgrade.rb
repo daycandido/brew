@@ -56,21 +56,33 @@ module Cask
       end
     end
 
+    sig { params(cask_upgrades: T::Array[String], dry_run: T.nilable(T::Boolean)).void }
+    def self.show_upgrade_summary(cask_upgrades, dry_run: false)
+      return if cask_upgrades.empty?
+
+      verb = dry_run ? "Would upgrade" : "Upgrading"
+      oh1 "#{verb} #{cask_upgrades.count} outdated #{::Utils.pluralize("package", cask_upgrades.count)}:"
+      puts cask_upgrades.join("\n")
+    end
+
     sig {
       params(
-        casks:               Cask,
-        args:                Homebrew::CLI::Args,
-        force:               T.nilable(T::Boolean),
-        greedy:              T.nilable(T::Boolean),
-        greedy_latest:       T.nilable(T::Boolean),
-        greedy_auto_updates: T.nilable(T::Boolean),
-        dry_run:             T.nilable(T::Boolean),
-        skip_cask_deps:      T.nilable(T::Boolean),
-        verbose:             T.nilable(T::Boolean),
-        quiet:               T.nilable(T::Boolean),
-        binaries:            T.nilable(T::Boolean),
-        quarantine:          T.nilable(T::Boolean),
-        require_sha:         T.nilable(T::Boolean),
+        casks:                Cask,
+        args:                 Homebrew::CLI::Args,
+        force:                T.nilable(T::Boolean),
+        greedy:               T.nilable(T::Boolean),
+        greedy_latest:        T.nilable(T::Boolean),
+        greedy_auto_updates:  T.nilable(T::Boolean),
+        dry_run:              T.nilable(T::Boolean),
+        skip_cask_deps:       T.nilable(T::Boolean),
+        verbose:              T.nilable(T::Boolean),
+        quiet:                T.nilable(T::Boolean),
+        binaries:             T.nilable(T::Boolean),
+        quarantine:           T.nilable(T::Boolean),
+        require_sha:          T.nilable(T::Boolean),
+        skip_prefetch:        T::Boolean,
+        show_upgrade_summary: T::Boolean,
+        download_queue:       T.nilable(Homebrew::DownloadQueue),
       ).returns(T::Boolean)
     }
     def self.upgrade_casks!(
@@ -86,11 +98,14 @@ module Cask
       quiet: false,
       binaries: nil,
       quarantine: nil,
-      require_sha: nil
+      require_sha: nil,
+      skip_prefetch: false,
+      show_upgrade_summary: true,
+      download_queue: nil
     )
       quarantine = true if quarantine.nil?
 
-      outdated_casks = \
+      outdated_casks =
         self.outdated_casks(casks, args:, greedy:, greedy_latest:, greedy_auto_updates:, force:, quiet:)
 
       manual_installer_casks = outdated_casks.select do |cask|
@@ -134,38 +149,48 @@ module Cask
 
       return false if upgradable_casks.empty?
 
-      if !dry_run && Homebrew::EnvConfig.download_concurrency > 1
-        download_queue = Homebrew::DownloadQueue.new(pour: true)
-
-        fetchable_casks = upgradable_casks.map(&:last)
-        fetchable_cask_installers = fetchable_casks.map do |cask|
-          # This is significantly easier given the weird difference in Sorbet signatures here.
-          # rubocop:disable Style/DoubleNegation
-          Installer.new(cask, binaries: !!binaries, verbose: !!verbose, force: !!force,
-                                               skip_cask_deps: !!skip_cask_deps, require_sha: !!require_sha,
-                                               upgrade: true, quarantine:, download_queue:)
-          # rubocop:enable Style/DoubleNegation
-        end
-
-        fetchable_cask_installers.each(&:prelude)
-
-        fetchable_casks_sentence = fetchable_casks.map { |cask| Formatter.identifier(cask.full_name) }.to_sentence
-        oh1 "Fetching downloads for: #{fetchable_casks_sentence}", truncate: false
-
-        fetchable_cask_installers.each(&:enqueue_downloads)
-
-        download_queue.fetch
+      cask_upgrades = upgradable_casks.map do |(old_cask, new_cask)|
+        "#{new_cask.full_name} #{old_cask.version} -> #{new_cask.version}"
       end
 
-      verb = dry_run ? "Would upgrade" : "Upgrading"
-      oh1 "#{verb} #{upgradable_casks.count} outdated #{::Utils.pluralize("package", upgradable_casks.count)}:"
+      created_download_queue = T.let(false, T::Boolean)
+      download_queue ||= if !dry_run && !skip_prefetch
+        created_download_queue = true
+        Homebrew::DownloadQueue.new(pour: true)
+      end
+
+      if !dry_run && !skip_prefetch
+        prefetch_download_queue = download_queue || Homebrew.default_download_queue
+        begin
+          fetchable_casks = upgradable_casks.map(&:last)
+          fetchable_cask_installers = fetchable_casks.map do |cask|
+            # This is significantly easier given the weird difference in Sorbet signatures here.
+            # rubocop:disable Style/DoubleNegation
+            Installer.new(cask, binaries: !!binaries, verbose: !!verbose, force: !!force,
+                                                 skip_cask_deps: !!skip_cask_deps, require_sha: !!require_sha,
+                                                 upgrade: true, quarantine:, download_queue: prefetch_download_queue,
+                                                 defer_fetch: true)
+            # rubocop:enable Style/DoubleNegation
+          end
+
+          fetchable_cask_installers.each(&:prelude)
+
+          fetchable_casks_sentence = fetchable_casks.map { |cask| Formatter.identifier(cask.full_name) }.to_sentence
+          oh1 "Fetching downloads for: #{fetchable_casks_sentence}", truncate: false
+
+          fetchable_cask_installers.each(&:enqueue_downloads)
+          prefetch_download_queue.fetch
+        ensure
+          prefetch_download_queue.shutdown if created_download_queue
+        end
+      end
+
+      show_upgrade_summary(cask_upgrades, dry_run:) if show_upgrade_summary
+      return true if dry_run
 
       caught_exceptions = []
 
-      puts upgradable_casks
-        .map { |(old_cask, new_cask)| "#{new_cask.full_name} #{old_cask.version} -> #{new_cask.version}" }
-        .join("\n")
-      return true if dry_run
+      download_queue ||= Homebrew.default_download_queue
 
       upgradable_casks.each do |(old_cask, new_cask)|
         upgrade_cask(
@@ -197,7 +222,7 @@ module Cask
         require_sha:    T.nilable(T::Boolean),
         skip_cask_deps: T.nilable(T::Boolean),
         verbose:        T.nilable(T::Boolean),
-        download_queue: T.nilable(Homebrew::DownloadQueue),
+        download_queue: Homebrew::DownloadQueue,
       ).void
     }
     def self.upgrade_cask(
@@ -231,6 +256,7 @@ module Cask
         upgrade:        true,
         quarantine:,
         download_queue:,
+        defer_fetch:    true,
       }.compact
 
       new_cask_installer =
@@ -241,6 +267,7 @@ module Cask
 
       begin
         oh1 "Upgrading #{Formatter.identifier(old_cask)}"
+        puts "  #{old_cask.version} -> #{new_cask.version}"
 
         # Start new cask's installation steps
         new_cask_installer.check_conflicts

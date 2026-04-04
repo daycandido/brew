@@ -1,12 +1,11 @@
 name: Command-not-found scheduled database updates
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - .github/workflows/command-not-found-db-update.yml
-  pull_request:
+      - Library/Homebrew/dev-cmd/which-update.rb
+      - Library/Homebrew/executables_db.rb
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -27,7 +26,11 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@main
 
       - name: Install oras for interacting with GitHub Packages
-        run: brew install oras
+        uses: Homebrew/actions/cache-homebrew-prefix@main
+        with:
+          install: oras
+          workflow-key: command-not-found-db-update
+          uninstall: true
 
       - name: Pull executables.txt from GitHub Packages
         run: oras pull ghcr.io/homebrew/command-not-found/executables:latest
@@ -70,14 +73,14 @@ jobs:
           shasum --algorithm=256 --check executables.txt.sha256
 
       - name: Upload database artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: executables-database
           path: executables.txt
 
   delete-old-versions:
     needs: update-database
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.ref == 'refs/heads/main'
     permissions:
       packages: write

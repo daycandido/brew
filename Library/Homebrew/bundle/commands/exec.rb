@@ -24,9 +24,18 @@ module Homebrew
             subcommand: String,
             services:   T::Boolean,
             check:      T::Boolean,
+            no_secrets: T::Boolean,
           ).void
         }
-        def self.run(*args, global: false, file: nil, subcommand: "", services: false, check: false)
+        def self.run(
+          *args,
+          global: false,
+          file: nil,
+          subcommand: "",
+          services: false,
+          check: false,
+          no_secrets: false
+        )
           if check
             require "bundle/commands/check"
             Homebrew::Bundle::Commands::Check.run(global:, file:, quiet: true)
@@ -35,6 +44,7 @@ module Homebrew
           # Store the old environment so we can check if things were already set
           # before we start mutating it.
           old_env = ENV.to_h
+          ENV.clear_sensitive_environment! if no_secrets
 
           # Setup Homebrew's ENV extensions
           ENV.activate_extensions!
@@ -66,6 +76,9 @@ module Homebrew
 
           # Enable compiler flag filtering
           ENV.refurbish_args
+
+          # Add variable to detect being inside a `brew bundle exec` environment
+          ENV["HOMEBREW_INSIDE_BUNDLE"] = "1"
 
           # Set up `nodenv`, `pyenv` and `rbenv` if present.
           env_formulae = %w[nodenv pyenv rbenv]
@@ -256,7 +269,7 @@ module Homebrew
           )
 
           entries_formulae.filter_map do |entry, formula|
-            service_file = Bundle::BrewServices.versioned_service_file(entry.name)
+            service_file = Bundle::Brew::Services.versioned_service_file(entry.name)
 
             unless service_file&.file?
               prefix = formula.any_installed_prefix
@@ -294,19 +307,19 @@ module Homebrew
             loaded_file = Pathname.new(info["loaded_file"].to_s)
             next if info["running"] && loaded_file.file? && loaded_file.realpath == service_file.realpath
 
-            if info["running"] && !Bundle::BrewServices.stop(info["name"], keep: true)
+            if info["running"] && !Bundle::Brew::Services.stop(info["name"], keep: true)
               opoo "Failed to stop #{info["name"]} service"
             end
 
             conflicting_services.each do |conflict|
-              if Bundle::BrewServices.stop(conflict["name"], keep: true)
+              if Bundle::Brew::Services.stop(conflict["name"], keep: true)
                 services_to_restart << conflict["name"] if conflict["registered"]
               else
                 opoo "Failed to stop #{conflict["name"]} service"
               end
             end
 
-            unless Bundle::BrewServices.run(info["name"], file: service_file)
+            unless Bundle::Brew::Services.run(info["name"], file: service_file)
               opoo "Failed to start #{info["name"]} service"
             end
 
@@ -322,7 +335,7 @@ module Homebrew
             stop_services(entries_to_stop)
 
             services_to_restart.each do |service|
-              next if Bundle::BrewServices.run(service)
+              next if Bundle::Brew::Services.run(service)
 
               opoo "Failed to restart #{service} service"
             end
@@ -337,7 +350,7 @@ module Homebrew
             # Try avoid services not started by `brew bundle services`
             next if Homebrew::Services::System.launchctl? && info["registered"]
 
-            if info["running"] && !Bundle::BrewServices.stop(info["name"], keep: true)
+            if info["running"] && !Bundle::Brew::Services.stop(info["name"], keep: true)
               opoo "Failed to stop #{info["name"]} service"
             end
           end

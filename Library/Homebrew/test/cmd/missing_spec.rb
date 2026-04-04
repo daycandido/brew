@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "cmd/missing"
@@ -11,6 +12,12 @@ RSpec.describe Homebrew::Cmd::Missing do
     setup_test_formula "bar"
 
     (HOMEBREW_CELLAR/"bar/1.0").mkpath
+    (HOMEBREW_CELLAR/"bar/1.0/INSTALL_RECEIPT.json").write(
+      JSON.generate({
+        "homebrew_version"     => "1.1.6",
+        "runtime_dependencies" => [{ "full_name" => "foo", "version" => "1.0" }],
+      }),
+    )
 
     expect { brew "missing" }
       .to output("foo\n").to_stdout

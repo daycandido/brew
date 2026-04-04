@@ -82,11 +82,11 @@ module OS
         sig { returns(T.nilable(String)) }
         def check_supported_architecture
           return if ::Hardware::CPU.intel?
-          return if Homebrew::EnvConfig.developer? && ENV["HOMEBREW_ARM64_TESTING"].present? && ::Hardware::CPU.arm?
+          return if ::Hardware::CPU.arm64?
 
           <<~EOS
             Your CPU architecture (#{::Hardware::CPU.arch}) is not supported. We only support
-            x86_64 CPU architectures. You will be unable to use binary packages (bottles).
+            x86_64 or ARM64/AArch64 CPU architectures. You will be unable to use binary packages (bottles).
 
             #{support_tier_message(tier: 2)}
           EOS
@@ -128,6 +128,25 @@ module OS
         end
 
         sig { returns(T.nilable(String)) }
+        def check_glibc_next_version
+          return if OS::LINUX_GLIBC_NEXT_CI_VERSION.blank?
+          return if OS::Linux::Glibc.below_ci_version?
+          return if OS::Linux::Glibc.system_version >= OS::LINUX_GLIBC_NEXT_CI_VERSION
+
+          # We want to bypass this check in some tests.
+          return if ENV["HOMEBREW_GLIBC_TESTING"] || ENV["CI"] || ENV["HOMEBREW_TEST_BOT"].present?
+
+          <<~EOS
+            Your system glibc #{OS::Linux::Glibc.system_version} is older than #{OS::LINUX_GLIBC_NEXT_CI_VERSION}.
+            An upcoming brew release will automatically install a newer version.
+
+            We recommend updating to a newer version via your distribution's
+            package manager, upgrading your distribution to the latest version,
+            or changing distributions.
+          EOS
+        end
+
+        sig { returns(T.nilable(String)) }
         def check_kernel_minimum_version
           return unless OS::Linux::Kernel.below_minimum_version?
 
@@ -151,7 +170,8 @@ module OS
 
           <<~EOS
             Your Linux core repository is still linuxbrew-core.
-            You must `brew update` to update to homebrew-core.
+            You must either unset `$HOMEBREW_NO_INSTALL_FROM_API` or set
+            the repository's remote to homebrew-core to update core formulae.
           EOS
         end
 
@@ -208,7 +228,7 @@ module OS
             # There are other checks that test that, we can skip broken kegs.
             next if dependent_prefix.nil? || !dependent_prefix.exist? || !dependent_prefix.directory?
 
-            keg = Keg.new(dependent_prefix)
+            keg = ::Keg.new(dependent_prefix)
             keg.binary_executable_or_library_files.any? do |binary|
               paths = binary.rpaths
               versioned_linkage = paths.any? { |path| path.match?(%r{lib/gcc/\d+$}) }

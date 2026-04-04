@@ -27,7 +27,7 @@ You don't have a `/usr/bin/ruby` or it is not executable. It's not recommended t
 
 After running `brew update`, you receive a Git error warning about untracked files or local changes that would be overwritten by a checkout or merge, followed by a list of files inside your Homebrew installation.
 
-This is caused by an old bug in in the `update` code that has long since been fixed. However, the nature of the bug requires that you do the following:
+This is caused by an old bug in the `update` code that has long since been fixed. However, the nature of the bug requires that you do the following:
 
 ```sh
 cd "$(brew --repository)"

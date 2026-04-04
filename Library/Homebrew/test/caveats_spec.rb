@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "formula"
@@ -174,6 +175,12 @@ RSpec.describe Caveats do
 
       it "tells formula is keg_only" do
         expect(caveats).to include("keg-only")
+      end
+
+      it "omits keg-only caveats when the formula is linked" do
+        allow(f).to receive(:linked?).and_return(true)
+
+        expect(caveats).to be_empty
       end
 
       it "gives command to be run when f.bin is a directory" do

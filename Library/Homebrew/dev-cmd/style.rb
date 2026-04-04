@@ -19,6 +19,10 @@ module Homebrew
         EOS
         switch "--fix",
                description: "Fix style violations automatically using RuboCop's auto-correct feature."
+        switch "--todo",
+               depends_on:  "--fix",
+               description: "Add `rubocop:todo` comments for RuboCop violations that remain after auto-correction. " \
+                            "Requires `--fix`."
         switch "--display-cop-names",
                description: "Include the RuboCop cop name for each violation in the output.",
                hidden:      true
@@ -69,6 +73,7 @@ module Homebrew
 
         options = {
           fix:         args.fix?,
+          todo:        args.todo?,
           reset_cache: args.reset_cache?,
           debug:       args.debug?,
           verbose:     args.verbose?,
@@ -84,16 +89,16 @@ module Homebrew
         Homebrew.failed = !Style.check_style_and_print(target, **options)
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[Pathname]) }
       def changed_ruby_or_shell_files
-        changed_files = Utils.popen_read("git", "diff", "--name-only", "main")
+        repo = Utils.popen_read("git", "rev-parse", "--show-toplevel").chomp
+        odie "`brew style --changed` must be run inside a git repository!" unless $CHILD_STATUS.success?
 
-        raise UsageError, "No files have been changed from the `main` branch!" if changed_files.blank?
-
+        changed_files = Utils.popen_read("git", "diff", "--name-only", "--no-relative", "main")
         changed_files.split("\n").filter_map do |file|
           next if !file.end_with?(".rb", ".sh", ".yml", ".rbi") && file != "bin/brew"
 
-          Pathname(file)
+          Pathname(file).expand_path(repo)
         end.select(&:exist?)
       end
     end

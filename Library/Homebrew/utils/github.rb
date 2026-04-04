@@ -15,7 +15,7 @@ module GitHub
   extend SystemCommand::Mixin
   extend Utils::Output::Mixin
 
-  MAX_PER_PAGE = T.let(100, Integer)
+  MAX_PER_PAGE = 100
 
   def self.issues(repo:, **filters)
     uri = url_to("repos", repo, "issues")
@@ -337,7 +337,7 @@ module GitHub
       artifacts
       .group_by { |art| art["name"] }
       .select { |name| File.fnmatch?(artifact_pattern, name, File::FNM_EXTGLOB) }
-      .map { |_, arts| arts.last }
+      .map { |_, arts| arts.max_by { |art| art["created_at"] } }
 
     if matching_artifacts.empty?
       raise API::Error, <<~EOS
@@ -629,7 +629,7 @@ module GitHub
 
     confidence = version ? "are" : "might be"
     duplicates_message = <<~EOS
-      These #{state} pull requests #{confidence} duplicates:
+      These #{"#{state} " if state}pull requests #{confidence} duplicates:
       #{pull_requests.map { |pr| "#{pr["title"]} #{pr["html_url"]}" }.join("\n")}
     EOS
     error_message = <<~EOS
@@ -686,6 +686,9 @@ module GitHub
   end
 
   def self.create_bump_pr(info, args:)
+    # --write-only without --commit means don't take any git actions at all.
+    return if args.write_only? && !args.commit?
+
     tap = info[:tap]
     remote = info[:remote] || "origin"
     remote_branch = info[:remote_branch] || tap.git_repository.origin_branch_name
@@ -706,13 +709,15 @@ module GitHub
         add_auth_token_to_url!(remote_url)
       else
         begin
-          remote_url, username = forked_repo_info!(tap_remote_repo, org: args.fork_org)
+          url, username = forked_repo_info!(tap_remote_repo, org: args.fork_org)
         rescue *API::ERRORS => e
           commits.each do |commit|
             commit[:sourcefile_path].atomic_write(commit[:old_contents])
           end
           odie "Unable to fork: #{e.message}!"
         end
+        odie "Failed to get forked repository URL for #{tap_remote_repo}!" unless url
+        remote_url = url
       end
 
       next if args.dry_run?
@@ -819,7 +824,7 @@ module GitHub
     pr_data["labels"].map { |label| label["name"] }
   end
 
-  def self.last_commit(user, repo, ref, version)
+  def self.last_commit(user, repo, ref, version, length: nil)
     return if Homebrew::EnvConfig.no_github_api?
 
     require "utils/curl"
@@ -831,8 +836,20 @@ module GitHub
 
     return unless result.status.success?
 
-    commit = result.stdout[/^ETag: "(\h+)"/, 1]
+    commit = result.stdout[/^ETag: "(\h+)"/i, 1]
     return if commit.blank?
+
+    if length
+      return if commit.length < length
+
+      commit = commit[0, length]
+
+      # We return nil if the following fails as we currently don't have a way to
+      # determine the reason for the failure. This means we can't distinguish a
+      # GitHub API rate limit from a non-unique short commit where the latter
+      # needs (n+1) or more characters to match `git rev-parse --short=n`.
+      return if multiple_short_commits_exist?(user, repo, commit)
+    end
 
     version.update_commit(commit)
     commit
@@ -845,13 +862,18 @@ module GitHub
     result = Utils::Curl.curl_output(
       "--silent", "--head", "--location",
       "--header", "Accept: application/vnd.github.sha",
+      "--output", File::NULL,
+      # This is a Curl format token, not a Ruby one.
+      # rubocop:disable Style/FormatStringToken
+      "--write-out", "%{http_code}",
+      # rubocop:enable Style/FormatStringToken
       url_to("repos", user, repo, "commits", commit).to_s
     )
 
     return true unless result.status.success?
     return true if (output = result.stdout).blank?
 
-    output[/^Status: (200)/, 1] != "200"
+    output != "200"
   end
 
   sig {
@@ -877,6 +899,8 @@ module GitHub
       end
     end
     commits
+  rescue GitHub::API::GitRepositoryIsEmptyError
+    []
   end
 
   sig {
@@ -969,8 +993,12 @@ module GitHub
     from_date = Date.parse(from)
     to_date = Date.parse(to)
 
-    rest_api_url = "#{GitHub::API_URL}/orgs/#{organisation}/repos?type=sources&per_page=#{MAX_PER_PAGE}"
-    repositories = GitHub::API.open_rest(rest_api_url)
+    rest_api_url = "#{GitHub::API_URL}/orgs/#{organisation}/repos"
+    params = "type=sources"
+    repositories = []
+    GitHub::API.paginate_rest(rest_api_url, per_page: MAX_PER_PAGE, additional_query_params: params) do |result|
+      repositories.concat(result)
+    end
     repositories.filter_map do |repository|
       pushed_at = Date.parse(repository.fetch("pushed_at"))
       created_at = Date.parse(repository.fetch("created_at"))

@@ -100,11 +100,13 @@ module Hardware
 
       sig { returns(Integer) }
       def cores
-        return @cores if @cores
-
-        @cores = Utils.popen_read("getconf", "_NPROCESSORS_ONLN").chomp.to_i
-        @cores = T.let(1, T.nilable(Integer)) unless $CHILD_STATUS.success?
-        @cores
+        @cores ||= T.let(
+          begin
+            cores = Utils.popen_read("getconf", "_NPROCESSORS_ONLN").chomp.to_i
+            $CHILD_STATUS.success? ? cores : 1
+          end,
+          T.nilable(Integer),
+        )
       end
 
       sig { returns(T.nilable(Integer)) }
@@ -163,6 +165,12 @@ module Hardware
         type == :arm
       end
 
+      # Check whether the CPU architecture is 64-bit ARM.
+      sig { returns(T::Boolean) }
+      def arm64?
+        arm? && is_64_bit?
+      end
+
       sig { returns(T::Boolean) }
       def little_endian?
         !big_endian?
@@ -173,7 +181,7 @@ module Hardware
         [1].pack("I") == [1].pack("N")
       end
 
-      sig { returns(FalseClass) }
+      sig { returns(T::Boolean) }
       def virtualized?
         false
       end

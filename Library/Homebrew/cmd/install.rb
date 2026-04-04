@@ -148,8 +148,8 @@ module Homebrew
             env:         :cask_opts_require_sha,
           }],
           [:switch, "--[no-]quarantine", {
-            description: "Disable/enable quarantining of downloads (default: enabled).",
-            env:         :cask_opts_quarantine,
+            env:       :cask_opts_quarantine,
+            odisabled: true,
           }],
           [:switch, "--adopt", {
             description: "Adopt existing artifacts in the destination that are identical to those being installed. " \
@@ -186,16 +186,6 @@ module Homebrew
           odisabled "`brew install --env`", "`env :std` in specific formula files"
         end
 
-        args.named.each do |name|
-          if (tap_with_name = Tap.with_formula_name(name))
-            tap, = tap_with_name
-          elsif (tap_with_token = Tap.with_cask_token(name))
-            tap, = tap_with_token
-          end
-
-          tap&.ensure_installed!
-        end
-
         if args.ignore_dependencies?
           opoo <<~EOS
             #{Tty.bold}`--ignore-dependencies` is an unsupported Homebrew developer option!#{Tty.reset}
@@ -205,21 +195,15 @@ module Homebrew
           EOS
         end
 
-        begin
-          formulae, casks = T.cast(
-            args.named.to_formulae_and_casks(warn: false).partition { _1.is_a?(Formula) },
-            [T::Array[Formula], T::Array[Cask::Cask]],
-          )
-        rescue FormulaOrCaskUnavailableError, Cask::CaskUnavailableError
-          cask_tap = CoreCaskTap.instance
-          if !cask_tap.installed? && (args.cask? || Tap.untapped_official_taps.exclude?(cask_tap.name))
-            cask_tap.ensure_installed!
-            retry if cask_tap.installed?
-          end
+        formulae, casks = T.cast(
+          args.named.to_formulae_and_casks(warn: false).partition { it.is_a?(Formula) },
+          [T::Array[Formula], T::Array[Cask::Cask]],
+        )
 
-          raise
-        end
-
+        installed_casks = T.let([], T::Array[Cask::Cask])
+        new_casks = T.let([], T::Array[Cask::Cask])
+        upgrade_casks = T.let([], T::Array[Cask::Cask])
+        fetch_casks = T.let([], T::Array[Cask::Cask])
         if casks.any?
           Install.ask_casks casks if args.ask?
           if args.dry_run?
@@ -231,7 +215,6 @@ module Homebrew
               dep_names = CaskDependent.new(cask)
                                        .runtime_dependencies
                                        .reject(&:installed?)
-                                       .map(&:to_formula)
                                        .map(&:name)
               next if dep_names.blank?
 
@@ -246,63 +229,11 @@ module Homebrew
 
           installed_casks, new_casks = casks.partition(&:installed?)
 
-          download_queue = Homebrew::DownloadQueue.new_if_concurrency_enabled(pour: true)
-          fetch_casks = Homebrew::EnvConfig.no_install_upgrade? ? new_casks : casks
-          outdated_casks = Cask::Upgrade.outdated_casks(fetch_casks, args:, force: true, quiet: true)
-          fetch_casks = outdated_casks.intersection(fetch_casks)
-
-          if download_queue && fetch_casks.any?
-            binaries = args.binaries?
-            verbose = args.verbose?
-            force = args.force?
-            require_sha = args.require_sha?
-            quarantine = args.quarantine?
-            skip_cask_deps = args.skip_cask_deps?
-            zap = args.zap?
-
-            fetch_cask_installers = fetch_casks.map do |cask|
-              Cask::Installer.new(cask, reinstall: true, binaries:, verbose:, force:, skip_cask_deps:,
-                                  require_sha:, quarantine:, zap:, download_queue:)
-            end
-
-            # Run prelude checks for all casks before enqueueing downloads
-            fetch_cask_installers.each(&:prelude)
-
-            fetch_casks_sentence = fetch_casks.map { |cask| Formatter.identifier(cask.full_name) }.to_sentence
-            oh1 "Fetching downloads for: #{fetch_casks_sentence}", truncate: false
-
-            fetch_cask_installers.each(&:enqueue_downloads)
-
-            download_queue.fetch
-          end
-
-          new_casks.each do |cask|
-            Cask::Installer.new(
-              cask,
-              adopt:          args.adopt?,
-              binaries:       args.binaries?,
-              force:          args.force?,
-              quarantine:     args.quarantine?,
-              quiet:          args.quiet?,
-              require_sha:    args.require_sha?,
-              skip_cask_deps: args.skip_cask_deps?,
-              verbose:        args.verbose?,
-            ).install
-          end
-
-          if !Homebrew::EnvConfig.no_install_upgrade? && installed_casks.any?
-            Cask::Upgrade.upgrade_casks!(
-              *installed_casks,
-              force:          args.force?,
-              dry_run:        args.dry_run?,
-              binaries:       args.binaries?,
-              quarantine:     args.quarantine?,
-              require_sha:    args.require_sha?,
-              skip_cask_deps: args.skip_cask_deps?,
-              verbose:        args.verbose?,
-              quiet:          args.quiet?,
-              args:,
-            )
+          fetch_casks = if Homebrew::EnvConfig.no_install_upgrade?
+            new_casks
+          else
+            upgrade_casks = Cask::Upgrade.outdated_casks(casks, args:, force: true, quiet: true)
+            new_casks | upgrade_casks
           end
         end
 
@@ -337,7 +268,7 @@ module Homebrew
           )
         end
 
-        return if formulae.any? && installed_formulae.empty?
+        return if formulae.any? && installed_formulae.empty? && casks.empty?
 
         Install.perform_preinstall_checks_once
         Install.check_cc_argv(args.cc)
@@ -388,6 +319,47 @@ module Homebrew
         # Main block: if asking the user is enabled, show dependency and size information.
         Install.ask_formulae(formulae_installer, dependants, args: args) if args.ask?
 
+        if !args.dry_run? && (formulae_installer.any? || fetch_casks.any?)
+          download_queue = Homebrew::DownloadQueue.new(pour: true)
+          begin
+            Cask::Upgrade.show_upgrade_summary(
+              upgrade_casks.map { |cask| "#{cask.full_name} #{cask.installed_version} -> #{cask.version}" },
+            )
+            Install.show_combined_fetch_downloads_heading(
+              formula_names: formulae_installer.map { |fi| fi.formula.name },
+              cask_names:    fetch_casks.map(&:full_name),
+            )
+
+            formulae_installer = Install.enqueue_formulae(formulae_installer, download_queue:)
+
+            if fetch_casks.any?
+              fetch_cask_installers = fetch_casks.map do |cask|
+                Cask::Installer.new(
+                  cask,
+                  reinstall:      true,
+                  binaries:       args.binaries?,
+                  verbose:        args.verbose?,
+                  force:          args.force?,
+                  skip_cask_deps: args.skip_cask_deps?,
+                  require_sha:    args.require_sha?,
+                  quarantine:     args.quarantine?,
+                  zap:            args.zap?,
+                  download_queue:,
+                  defer_fetch:    true,
+                )
+              end
+
+              Install.enqueue_cask_installers(fetch_cask_installers)
+            end
+
+            download_queue.fetch
+          ensure
+            download_queue.shutdown
+          end
+        end
+
+        exit 1 if Homebrew.failed?
+
         Install.install_formulae(formulae_installer,
                                  dry_run: args.dry_run?,
                                  verbose: args.verbose?)
@@ -406,6 +378,48 @@ module Homebrew
           quiet:                      args.quiet?,
           verbose:                    args.verbose?
         )
+
+        if casks.any?
+          begin
+            new_casks.each do |cask|
+              Cask::Installer.new(
+                cask,
+                adopt:          args.adopt?,
+                binaries:       args.binaries?,
+                defer_fetch:    fetch_casks.include?(cask),
+                force:          args.force?,
+                quarantine:     args.quarantine?,
+                quiet:          args.quiet?,
+                require_sha:    args.require_sha?,
+                skip_cask_deps: args.skip_cask_deps?,
+                verbose:        args.verbose?,
+              ).install
+            end
+          rescue => e
+            ofail e
+          end
+
+          if !Homebrew::EnvConfig.no_install_upgrade? && installed_casks.any?
+            begin
+              Cask::Upgrade.upgrade_casks!(
+                *installed_casks,
+                force:                args.force?,
+                dry_run:              args.dry_run?,
+                binaries:             args.binaries?,
+                quarantine:           args.quarantine?,
+                require_sha:          args.require_sha?,
+                skip_cask_deps:       args.skip_cask_deps?,
+                verbose:              args.verbose?,
+                quiet:                args.quiet?,
+                skip_prefetch:        true,
+                show_upgrade_summary: false,
+                args:,
+              )
+            rescue => e
+              ofail e
+            end
+          end
+        end
 
         Cleanup.periodic_clean!(dry_run: args.dry_run?)
 

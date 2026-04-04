@@ -1,8 +1,10 @@
+# typed: false
 # frozen_string_literal: true
 
 require "open3"
 
 require "formula_installer"
+require "uninstall"
 
 RSpec::Matchers.define_negated_matcher :be_a_failure, :be_a_success
 
@@ -57,7 +59,7 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
   # properly merge coverage results.
   def command_id
     Thread.current[:brew_integration_test_number] ||= 0
-    "#{ENV.fetch("TEST_ENV_NUMBER", "")}:#{Thread.current[:brew_integration_test_number] += 1}"
+    "#{Process.pid}:#{ENV.fetch("TEST_ENV_NUMBER", "")}:#{Thread.current[:brew_integration_test_number] += 1}"
   end
 
   # Runs a `brew` command with the test configuration
@@ -120,12 +122,19 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
   end
 
   def brew_sh(*args)
+    env = args.last.is_a?(Hash) ? args.pop : {}
     env = {
       "HOMEBREW_USE_RUBY_FROM_PATH" => ENV.fetch("HOMEBREW_USE_RUBY_FROM_PATH", nil),
       "HOMEBREW_CACHE"              => HOMEBREW_CACHE.to_s,
-    }
+      "HOMEBREW_INTEGRATION_TEST"   => command_id,
+    }.merge(env)
     Bundler.with_unbundled_env do
-      stdout, stderr, status = Open3.capture3(env, "#{ENV.fetch("HOMEBREW_PREFIX")}/bin/brew", *args)
+      brew_sh_path = env.delete("HOMEBREW_BREW_SH") || "#{ENV.fetch("HOMEBREW_PREFIX")}/bin/brew"
+      stdout, stderr, status = Open3.capture3(
+        env,
+        brew_sh_path,
+        *args,
+      )
       $stdout.print stdout
       $stderr.print stderr
       status
@@ -143,6 +152,12 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
       else
         TEST_FIXTURE_DIR/"tarballs/#{prefix}-0.1.tbz"
       end
+      bottle_block ||= <<~RUBY if name == "testball_bottle"
+        bottle do
+          root_url "file://#{TEST_FIXTURE_DIR}/bottles"
+          sha256 cellar: :any_skip_relocation, all: "d7b9f4e8bf83608b71fe958a99f19f2e5e68bb2582965d32e41759c24f1aef97"
+        end
+      RUBY
       content = <<~RUBY
         desc "Some test"
         homepage "https://brew.sh/#{name}"
@@ -214,6 +229,12 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
     fi.fetch
     fi.install
     fi.finish
+  end
+
+  def uninstall_test_formula(name)
+    rack = HOMEBREW_CELLAR/name
+    kegs = rack.children.map { |prefix| Keg.new(prefix) }
+    Homebrew::Uninstall.uninstall_kegs({ rack => kegs }, force: true, ignore_dependencies: true)
   end
 
   def setup_test_tap

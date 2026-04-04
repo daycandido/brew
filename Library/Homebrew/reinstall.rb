@@ -10,7 +10,7 @@ require "utils/output"
 class FormulaInstaller; end
 # rubocop:enable Lint/EmptyClass
 
-module Homebrew
+module Homebrew # rubocop:todo Style/OneClassPerFile
   module Reinstall
     extend Utils::Output::Mixin
 

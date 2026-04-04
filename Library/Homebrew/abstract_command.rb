@@ -39,7 +39,7 @@ module Homebrew
 
       # @return the AbstractCommand subclass associated with the brew CLI command name.
       sig { params(name: String).returns(T.nilable(T.class_of(AbstractCommand))) }
-      def command(name) = subclasses.find { _1.command_name == name }
+      def command(name) = subclasses.find { it.command_name == name }
 
       sig { returns(T::Boolean) }
       def dev_cmd? = T.must(name).start_with?("Homebrew::DevCmd")
@@ -79,6 +79,9 @@ module Homebrew
 
   module Cmd
     # The command class for `brew` itself, allowing its args to be parsed.
-    class Brew < AbstractCommand; end
+    class Brew < AbstractCommand
+      sig { override.void }
+      def run; end
+    end
   end
 end

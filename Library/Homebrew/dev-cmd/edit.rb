@@ -30,6 +30,11 @@ module Homebrew
         # Recover $TMPDIR for emacsclient
         ENV["TMPDIR"] = ENV.fetch("HOMEBREW_TMPDIR", nil)
 
+        # VS Code remote development relies on this env var to work
+        if which_editor(silent: true) == "code" && ENV.include?("HOMEBREW_VSCODE_IPC_HOOK_CLI")
+          ENV["VSCODE_IPC_HOOK_CLI"] = ENV.fetch("HOMEBREW_VSCODE_IPC_HOOK_CLI", nil)
+        end
+
         unless (HOMEBREW_REPOSITORY/".git").directory?
           odie <<~EOS
             Changes will be lost!
@@ -48,6 +53,16 @@ module Homebrew
             [HOMEBREW_REPOSITORY]
           end
         else
+          args.named.each do |name|
+            if !args.cask? && !CoreTap.instance.installed? &&
+               Homebrew::API.formula_names.include?(name.delete_prefix("#{CoreTap.instance.name}/"))
+              CoreTap.instance.install(force: true)
+            elsif !args.formula? && !CoreCaskTap.instance.installed? &&
+                  Homebrew::API.cask_tokens.include?(name.delete_prefix("#{CoreCaskTap.instance.name}/"))
+              CoreCaskTap.instance.install(force: true)
+            end
+          end
+
           expanded_paths = args.named.to_paths
           expanded_paths.each do |path|
             raise_with_message!(path, args.cask?) unless path.exist?
@@ -56,7 +71,7 @@ module Homebrew
         end
 
         if args.print_path?
-          paths.each { puts _1 }
+          paths.each { puts it }
           return
         end
 

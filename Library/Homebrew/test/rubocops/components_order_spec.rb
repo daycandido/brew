@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "rubocops/components_order"
@@ -219,7 +220,7 @@ RSpec.describe RuboCop::Cop::FormulaAudit::ComponentsOrder do
           depends_on "automake" => :build
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ FormulaAudit/ComponentsOrder: `depends_on` (line 4) should be put before `conflicts_with` (line 3)
           depends_on "libtool" => :build
-          depends_on "pkg-config" => :build
+          depends_on "pkgconf" => :build
           depends_on "gettext"
         end
       RUBY
@@ -229,7 +230,7 @@ RSpec.describe RuboCop::Cop::FormulaAudit::ComponentsOrder do
           depends_on "autoconf" => :build
           depends_on "automake" => :build
           depends_on "libtool" => :build
-          depends_on "pkg-config" => :build
+          depends_on "pkgconf" => :build
           depends_on "gettext"
           conflicts_with "visionmedia-watch"
         end
@@ -342,7 +343,7 @@ RSpec.describe RuboCop::Cop::FormulaAudit::ComponentsOrder do
         class Foo < Formula
           homepage "https://brew.sh"
 
-          depends_on "pkg-config" => :build
+          depends_on "pkgconf" => :build
 
           def install
           end
@@ -357,7 +358,7 @@ RSpec.describe RuboCop::Cop::FormulaAudit::ComponentsOrder do
         class Foo < Formula
           homepage "https://brew.sh"
 
-          depends_on "pkg-config" => :build
+          depends_on "pkgconf" => :build
 
           uses_from_macos "libxml2"
 

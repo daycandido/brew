@@ -25,8 +25,6 @@ class Tap
   private_constant :HOMEBREW_TAP_MIGRATIONS_FILE
   HOMEBREW_TAP_AUTOBUMP_FILE = ".github/autobump.txt"
   private_constant :HOMEBREW_TAP_AUTOBUMP_FILE
-  HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE = "pypi_formula_mappings.json"
-  private_constant :HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE
   HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE = "synced_versions_formulae.json"
   private_constant :HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE
   HOMEBREW_TAP_DISABLED_NEW_USR_LOCAL_RELOCATION_FORMULAE_FILE = "disabled_new_usr_local_relocation_formulae.json"
@@ -40,7 +38,6 @@ class Tap
     #{HOMEBREW_TAP_FORMULA_RENAMES_FILE}
     #{HOMEBREW_TAP_CASK_RENAMES_FILE}
     #{HOMEBREW_TAP_MIGRATIONS_FILE}
-    #{HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE}
     #{HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE}
     #{HOMEBREW_TAP_DISABLED_NEW_USR_LOCAL_RELOCATION_FORMULAE_FILE}
     #{HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR}/*.json
@@ -258,7 +255,6 @@ class Tap
 
     @audit_exceptions = nil
     @style_exceptions = nil
-    @pypi_formula_mappings = nil
     @synced_versions_formulae = nil
 
     @config = nil
@@ -435,7 +431,7 @@ class Tap
   sig {
     overridable.params(
       quiet:         T::Boolean,
-      clone_target:  T.any(NilClass, Pathname, String),
+      clone_target:  T.nilable(T.any(Pathname, String)),
       custom_remote: T::Boolean,
       verify:        T::Boolean,
       force:         T::Boolean,
@@ -591,7 +587,7 @@ class Tap
     end
   end
 
-  sig { params(requested_remote: T.any(NilClass, Pathname, String), quiet: T::Boolean).void }
+  sig { params(requested_remote: T.nilable(T.any(Pathname, String)), quiet: T::Boolean).void }
   def fix_remote_configuration(requested_remote: nil, quiet: false)
     if requested_remote.present?
       path.cd do
@@ -840,7 +836,7 @@ class Tap
   # An array of all {Formula} names of this {Tap}.
   sig { overridable.returns(T::Array[String]) }
   def formula_names
-    @formula_names ||= T.let(formula_files.map { formula_file_to_name(_1) }, T.nilable(T::Array[String]))
+    @formula_names ||= T.let(formula_files.map { formula_file_to_name(it) }, T.nilable(T::Array[String]))
   end
 
   # A hash of all {Formula} name prefixes to versioned {Formula} in this {Tap}.
@@ -848,7 +844,7 @@ class Tap
   def prefix_to_versioned_formulae_names
     @prefix_to_versioned_formulae_names ||= T.let(formula_names
                                                   .select { |name| name.include?("@") }
-                                                  .group_by { |name| name.gsub(/(@[\d.]+)?$/, "") }
+                                                  .group_by { |name| name.sub(/@[\d.]+(?=-full$|$)/, "") }
                                                   .transform_values(&:sort)
                                                   .freeze, T.nilable(T::Hash[String, T::Array[String]]))
   end
@@ -856,7 +852,7 @@ class Tap
   # An array of all {Cask} tokens of this {Tap}.
   sig { returns(T::Array[String]) }
   def cask_tokens
-    @cask_tokens ||= T.let(cask_files.map { formula_file_to_name(_1) }, T.nilable(T::Array[String]))
+    @cask_tokens ||= T.let(cask_files.map { formula_file_to_name(it) }, T.nilable(T::Array[String]))
   end
 
   # Path to the directory of all alias files for this {Tap}.
@@ -880,9 +876,9 @@ class Tap
   # Mapping from aliases to formula names.
   sig { overridable.returns(T::Hash[String, String]) }
   def alias_table
-    @alias_table ||= T.let(alias_files.each_with_object({}) do |alias_file, alias_table|
-      alias_table[alias_file_to_name(alias_file)] = formula_file_to_name(alias_file.resolved_path)
-    end, T.nilable(T::Hash[String, String]))
+    @alias_table ||= T.let(alias_files.to_h do |alias_file|
+                             [alias_file_to_name(alias_file), formula_file_to_name(alias_file.resolved_path)]
+                           end, T.nilable(T::Hash[String, String]))
   end
 
   # Mapping from formula names to aliases.
@@ -1041,7 +1037,6 @@ class Tap
 
     @autobump ||= T.let(autobump_packages.select do |_, p|
       next if p["disabled"]
-      next if p["deprecated"] && p["deprecation_reason"] != "fails_gatekeeper_check"
       next if p["skip_livecheck"]
 
       p["autobump"] == true
@@ -1079,18 +1074,6 @@ class Tap
   def style_exceptions
     @style_exceptions ||= T.let(read_formula_list_directory("#{HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR}/*"),
                                 T.nilable(T::Hash[Symbol, T.untyped]))
-  end
-
-  # Hash with pypi formula mappings
-  sig { overridable.returns(T::Hash[String, T.untyped]) }
-  def pypi_formula_mappings
-    return @pypi_formula_mappings if @pypi_formula_mappings
-
-    @pypi_formula_mappings = T.let(
-      T.cast(read_formula_list(path/HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE), T::Hash[String, T.untyped]),
-      T.nilable(T::Hash[String, T.untyped]),
-    )
-    T.must(@pypi_formula_mappings)
   end
 
   # Array with synced versions formulae
@@ -1142,7 +1125,7 @@ class Tap
   sig { returns(T::Array[Tap]) }
   def self.installed
     cache[:installed] ||= if HOMEBREW_TAP_DIRECTORY.directory?
-      HOMEBREW_TAP_DIRECTORY.subdirs.flat_map(&:subdirs).map { from_path(_1) }
+      HOMEBREW_TAP_DIRECTORY.subdirs.flat_map(&:subdirs).map { from_path(it) }
     else
       []
     end
@@ -1190,7 +1173,7 @@ class Tap
   end
 
   sig {
-    overridable.params(list: Symbol, formula_or_cask: String, value: T.any(NilClass, String, Version))
+    overridable.params(list: Symbol, formula_or_cask: String, value: T.nilable(T.any(String, Version)))
                .returns(T.any(T::Boolean, String))
   }
   def audit_exception(list, formula_or_cask, value = nil)
@@ -1255,7 +1238,7 @@ class Tap
   end
 end
 
-class AbstractCoreTap < Tap
+class AbstractCoreTap < Tap # rubocop:todo Style/OneClassPerFile
   extend T::Helpers
 
   abstract!
@@ -1296,7 +1279,7 @@ class AbstractCoreTap < Tap
 end
 
 # A specialized {Tap} class for the core formulae.
-class CoreTap < AbstractCoreTap
+class CoreTap < AbstractCoreTap # rubocop:todo Style/OneClassPerFile
   class << self
     Elem = type_member(:out) { { fixed: Tap } }
   end
@@ -1322,7 +1305,7 @@ class CoreTap < AbstractCoreTap
 
   # CoreTap never allows shallow clones (on request from GitHub).
   sig {
-    override.params(quiet: T::Boolean, clone_target: T.any(NilClass, Pathname, String),
+    override.params(quiet: T::Boolean, clone_target: T.nilable(T.any(Pathname, String)),
                     custom_remote: T::Boolean, verify: T::Boolean, force: T::Boolean).void
   }
   def install(quiet: false, clone_target: nil,
@@ -1441,14 +1424,6 @@ class CoreTap < AbstractCoreTap
     end, T.nilable(T::Hash[Symbol, T.untyped]))
   end
 
-  sig { override.returns(T::Hash[String, T.untyped]) }
-  def pypi_formula_mappings
-    @pypi_formula_mappings ||= T.let(begin
-      ensure_installed!
-      super
-    end, T.nilable(T::Hash[String, T.untyped]))
-  end
-
   sig { override.returns(T::Array[T::Array[String]]) }
   def synced_versions_formulae
     @synced_versions_formulae ||= T.let(begin
@@ -1509,7 +1484,7 @@ class CoreTap < AbstractCoreTap
 end
 
 # A specialized {Tap} class for homebrew-cask.
-class CoreCaskTap < AbstractCoreTap
+class CoreCaskTap < AbstractCoreTap # rubocop:todo Style/OneClassPerFile
   class << self
     Elem = type_member(:out) { { fixed: Tap } }
   end
@@ -1597,7 +1572,7 @@ class CoreCaskTap < AbstractCoreTap
 end
 
 # Permanent configuration per {Tap} using `git-config(1)`.
-class TapConfig
+class TapConfig # rubocop:todo Style/OneClassPerFile
   sig { returns(Tap) }
   attr_reader :tap
 

@@ -23,28 +23,29 @@ class SystemCommand
     # @api internal
     sig {
       params(
-        executable:   T.any(String, Pathname),
-        args:         T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
-        sudo:         T::Boolean,
-        sudo_as_root: T::Boolean,
-        env:          T::Hash[String, T.any(NilClass, String, T::Boolean)],
-        input:        T.any(String, T::Array[String]),
-        must_succeed: T::Boolean,
-        print_stdout: T.any(T::Boolean, Symbol),
-        print_stderr: T.any(T::Boolean, Symbol),
-        debug:        T.nilable(T::Boolean),
-        verbose:      T.nilable(T::Boolean),
-        secrets:      T.any(String, T::Array[String]),
-        chdir:        T.any(String, Pathname),
-        reset_uid:    T::Boolean,
-        timeout:      T.nilable(T.any(Integer, Float)),
+        executable:      T.any(String, Pathname),
+        args:            T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
+        sudo:            T::Boolean,
+        sudo_as_root:    T::Boolean,
+        env:             T::Hash[String, T.nilable(T.any(String, T::Boolean))],
+        input:           T.any(String, T::Array[String]),
+        must_succeed:    T::Boolean,
+        print_stdout:    T.any(T::Boolean, Symbol),
+        print_stderr:    T.any(T::Boolean, Symbol),
+        debug:           T.nilable(T::Boolean),
+        verbose:         T.nilable(T::Boolean),
+        secrets:         T.any(String, T::Array[String]),
+        chdir:           T.any(String, Pathname),
+        reset_uid:       T::Boolean,
+        run_as_real_uid: T::Boolean,
+        timeout:         T.nilable(T.any(Integer, Float)),
       ).returns(SystemCommand::Result)
     }
     def system_command(executable, args: [], sudo: false, sudo_as_root: false, env: {}, input: [],
                        must_succeed: false, print_stdout: false, print_stderr: true, debug: nil, verbose: nil,
-                       secrets: [], chdir: T.unsafe(nil), reset_uid: false, timeout: nil)
+                       secrets: [], chdir: T.unsafe(nil), reset_uid: false, run_as_real_uid: false, timeout: nil)
       SystemCommand.run(executable, args:, sudo:, sudo_as_root:, env:, input:, must_succeed:, print_stdout:,
-                        print_stderr:, debug:, verbose:, secrets:, chdir:, reset_uid:, timeout:)
+                        print_stderr:, debug:, verbose:, secrets:, chdir:, reset_uid:, run_as_real_uid:, timeout:)
     end
 
     # Run an infallible system command.
@@ -52,27 +53,28 @@ class SystemCommand
     # @api internal
     sig {
       params(
-        executable:   T.any(String, Pathname),
-        args:         T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
-        sudo:         T::Boolean,
-        sudo_as_root: T::Boolean,
-        env:          T::Hash[String, T.any(NilClass, String, T::Boolean)],
-        input:        T.any(String, T::Array[String]),
-        print_stdout: T.any(T::Boolean, Symbol),
-        print_stderr: T.any(T::Boolean, Symbol),
-        debug:        T.nilable(T::Boolean),
-        verbose:      T.nilable(T::Boolean),
-        secrets:      T.any(String, T::Array[String]),
-        chdir:        T.any(String, Pathname),
-        reset_uid:    T::Boolean,
-        timeout:      T.nilable(T.any(Integer, Float)),
+        executable:      T.any(String, Pathname),
+        args:            T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
+        sudo:            T::Boolean,
+        sudo_as_root:    T::Boolean,
+        env:             T::Hash[String, T.nilable(T.any(String, T::Boolean))],
+        input:           T.any(String, T::Array[String]),
+        print_stdout:    T.any(T::Boolean, Symbol),
+        print_stderr:    T.any(T::Boolean, Symbol),
+        debug:           T.nilable(T::Boolean),
+        verbose:         T.nilable(T::Boolean),
+        secrets:         T.any(String, T::Array[String]),
+        chdir:           T.any(String, Pathname),
+        reset_uid:       T::Boolean,
+        run_as_real_uid: T::Boolean,
+        timeout:         T.nilable(T.any(Integer, Float)),
       ).returns(SystemCommand::Result)
     }
     def system_command!(executable, args: [], sudo: false, sudo_as_root: false, env: {}, input: [],
                         print_stdout: false, print_stderr: true, debug: nil, verbose: nil, secrets: [],
-                        chdir: T.unsafe(nil), reset_uid: false, timeout: nil)
+                        chdir: T.unsafe(nil), reset_uid: false, run_as_real_uid: false, timeout: nil)
       SystemCommand.run!(executable, args:, sudo:, sudo_as_root:, env:, input:, print_stdout:,
-                         print_stderr:, debug:, verbose:, secrets:, chdir:, reset_uid:, timeout:)
+                         print_stderr:, debug:, verbose:, secrets:, chdir:, reset_uid:, run_as_real_uid:, timeout:)
     end
   end
 
@@ -80,59 +82,61 @@ class SystemCommand
 
   sig {
     params(
-      executable:   T.any(String, Pathname),
-      args:         T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
-      sudo:         T::Boolean,
-      sudo_as_root: T::Boolean,
-      env:          T::Hash[String, T.any(NilClass, String, T::Boolean)],
-      input:        T.any(String, T::Array[String]),
-      must_succeed: T::Boolean,
-      print_stdout: T.any(T::Boolean, Symbol),
-      print_stderr: T.any(T::Boolean, Symbol),
-      debug:        T.nilable(T::Boolean),
-      verbose:      T.nilable(T::Boolean),
-      secrets:      T.any(String, T::Array[String]),
-      chdir:        T.any(NilClass, String, Pathname),
-      reset_uid:    T::Boolean,
-      timeout:      T.nilable(T.any(Integer, Float)),
+      executable:      T.any(String, Pathname),
+      args:            T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
+      sudo:            T::Boolean,
+      sudo_as_root:    T::Boolean,
+      env:             T::Hash[String, T.nilable(T.any(String, T::Boolean))],
+      input:           T.any(String, T::Array[String]),
+      must_succeed:    T::Boolean,
+      print_stdout:    T.any(T::Boolean, Symbol),
+      print_stderr:    T.any(T::Boolean, Symbol),
+      debug:           T.nilable(T::Boolean),
+      verbose:         T.nilable(T::Boolean),
+      secrets:         T.any(String, T::Array[String]),
+      chdir:           T.nilable(T.any(String, Pathname)),
+      reset_uid:       T::Boolean,
+      run_as_real_uid: T::Boolean,
+      timeout:         T.nilable(T.any(Integer, Float)),
     ).returns(SystemCommand::Result)
   }
   def self.run(executable, args: [], sudo: false, sudo_as_root: false, env: {}, input: [], must_succeed: false,
                print_stdout: false, print_stderr: true, debug: nil, verbose: nil, secrets: [], chdir: nil,
-               reset_uid: false, timeout: nil)
+               reset_uid: false, run_as_real_uid: false, timeout: nil)
     new(executable, args:, sudo:, sudo_as_root:, env:, input:, must_succeed:, print_stdout:, print_stderr:, debug:,
-        verbose:, secrets:, chdir:, reset_uid:, timeout:).run!
+        verbose:, secrets:, chdir:, reset_uid:, run_as_real_uid:, timeout:).run!
   end
 
   sig {
     params(
-      executable:   T.any(String, Pathname),
-      args:         T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
-      sudo:         T::Boolean,
-      sudo_as_root: T::Boolean,
-      env:          T::Hash[String, T.any(NilClass, String, T::Boolean)],
-      input:        T.any(String, T::Array[String]),
-      must_succeed: T::Boolean,
-      print_stdout: T.any(T::Boolean, Symbol),
-      print_stderr: T.any(T::Boolean, Symbol),
-      debug:        T.nilable(T::Boolean),
-      verbose:      T.nilable(T::Boolean),
-      secrets:      T.any(String, T::Array[String]),
-      chdir:        T.any(NilClass, String, Pathname),
-      reset_uid:    T::Boolean,
-      timeout:      T.nilable(T.any(Integer, Float)),
+      executable:      T.any(String, Pathname),
+      args:            T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
+      sudo:            T::Boolean,
+      sudo_as_root:    T::Boolean,
+      env:             T::Hash[String, T.nilable(T.any(String, T::Boolean))],
+      input:           T.any(String, T::Array[String]),
+      must_succeed:    T::Boolean,
+      print_stdout:    T.any(T::Boolean, Symbol),
+      print_stderr:    T.any(T::Boolean, Symbol),
+      debug:           T.nilable(T::Boolean),
+      verbose:         T.nilable(T::Boolean),
+      secrets:         T.any(String, T::Array[String]),
+      chdir:           T.nilable(T.any(String, Pathname)),
+      reset_uid:       T::Boolean,
+      run_as_real_uid: T::Boolean,
+      timeout:         T.nilable(T.any(Integer, Float)),
     ).returns(SystemCommand::Result)
   }
   def self.run!(executable, args: [], sudo: false, sudo_as_root: false, env: {}, input: [], must_succeed: true,
                 print_stdout: false, print_stderr: true, debug: nil, verbose: nil, secrets: [], chdir: nil,
-                reset_uid: false, timeout: nil)
+                reset_uid: false, run_as_real_uid: false, timeout: nil)
     run(executable, args:, sudo:, sudo_as_root:, env:, input:, must_succeed:, print_stdout:, print_stderr:,
-        debug:, verbose:, secrets:, chdir:, reset_uid:, timeout:)
+        debug:, verbose:, secrets:, chdir:, reset_uid:, run_as_real_uid:, timeout:)
   end
 
   sig { returns(SystemCommand::Result) }
   def run!
-    $stderr.puts redact_secrets(command.shelljoin.gsub('\=', "="), @secrets) if verbose? && debug?
+    $stderr.puts Formatter.redact_secrets(command.shelljoin.gsub('\=', "="), @secrets) if verbose? && debug?
 
     @output = T.let([], T.nilable(T::Array[[Symbol, String]]))
     @output = T.must(@output)
@@ -142,17 +146,17 @@ class SystemCommand
       when :stdout
         case @print_stdout
         when true
-          $stdout << redact_secrets(line, @secrets)
+          $stdout << Formatter.redact_secrets(line, @secrets)
         when :debug
-          $stderr << redact_secrets(line, @secrets) if debug?
+          $stderr << Formatter.redact_secrets(line, @secrets) if debug?
         end
         @output << [:stdout, line]
       when :stderr
         case @print_stderr
         when true
-          $stderr << redact_secrets(line, @secrets)
+          $stderr << Formatter.redact_secrets(line, @secrets)
         when :debug
-          $stderr << redact_secrets(line, @secrets) if debug?
+          $stderr << Formatter.redact_secrets(line, @secrets) if debug?
         end
         @output << [:stderr, line]
       end
@@ -165,31 +169,33 @@ class SystemCommand
 
   sig {
     params(
-      executable:   T.any(String, Pathname),
-      args:         T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
-      sudo:         T::Boolean,
-      sudo_as_root: T::Boolean,
-      env:          T::Hash[String, T.any(NilClass, String, T::Boolean)],
-      input:        T.any(String, T::Array[String]),
-      must_succeed: T::Boolean,
-      print_stdout: T.any(T::Boolean, Symbol),
-      print_stderr: T.any(T::Boolean, Symbol),
-      debug:        T.nilable(T::Boolean),
-      verbose:      T.nilable(T::Boolean),
-      secrets:      T.any(String, T::Array[String]),
-      chdir:        T.any(NilClass, String, Pathname),
-      reset_uid:    T::Boolean,
-      timeout:      T.nilable(T.any(Integer, Float)),
+      executable:      T.any(String, Pathname),
+      args:            T::Array[T.any(String, Integer, Float, Pathname, URI::Generic)],
+      sudo:            T::Boolean,
+      sudo_as_root:    T::Boolean,
+      env:             T::Hash[String, T.nilable(T.any(String, T::Boolean))],
+      input:           T.any(String, T::Array[String]),
+      must_succeed:    T::Boolean,
+      print_stdout:    T.any(T::Boolean, Symbol),
+      print_stderr:    T.any(T::Boolean, Symbol),
+      debug:           T.nilable(T::Boolean),
+      verbose:         T.nilable(T::Boolean),
+      secrets:         T.any(String, T::Array[String]),
+      chdir:           T.nilable(T.any(String, Pathname)),
+      reset_uid:       T::Boolean,
+      run_as_real_uid: T::Boolean,
+      timeout:         T.nilable(T.any(Integer, Float)),
     ).void
   }
   def initialize(executable, args: [], sudo: false, sudo_as_root: false, env: {}, input: [], must_succeed: false,
                  print_stdout: false, print_stderr: true, debug: nil, verbose: nil, secrets: [], chdir: nil,
-                 reset_uid: false, timeout: nil)
+                 reset_uid: false, run_as_real_uid: false, timeout: nil)
     require "extend/ENV"
     @executable = executable
     @args = args
 
     raise ArgumentError, "`sudo_as_root` cannot be set if sudo is false" if !sudo && sudo_as_root
+    raise ArgumentError, "`reset_uid` and `run_as_real_uid` cannot both be true" if reset_uid && run_as_real_uid
 
     if print_stdout.is_a?(Symbol) && print_stdout != :debug
       raise ArgumentError, "`print_stdout` is not a valid symbol"
@@ -215,6 +221,7 @@ class SystemCommand
     @secrets = T.let((Array(secrets) + ENV.sensitive_environment.values).uniq, T::Array[String])
     @chdir = chdir
     @reset_uid = reset_uid
+    @run_as_real_uid = run_as_real_uid
     @timeout = timeout
   end
 
@@ -234,10 +241,10 @@ class SystemCommand
   sig { returns(T::Array[String]) }
   attr_reader :input
 
-  sig { returns(T.any(NilClass, String, Pathname)) }
+  sig { returns(T.nilable(T.any(String, Pathname))) }
   attr_reader :chdir
 
-  sig { returns(T::Hash[String, T.any(NilClass, String, T::Boolean)]) }
+  sig { returns(T::Hash[String, T.nilable(T.any(String, T::Boolean))]) }
   attr_reader :env
 
   sig { returns(T::Boolean) }
@@ -245,6 +252,9 @@ class SystemCommand
 
   sig { returns(T::Boolean) }
   def reset_uid? = @reset_uid
+
+  sig { returns(T::Boolean) }
+  def run_as_real_uid? = @run_as_real_uid
 
   sig { returns(T::Boolean) }
   def sudo? = @sudo
@@ -344,7 +354,7 @@ class SystemCommand
     thread_done_queue = Queue.new
     line_thread = Thread.new do
       # Ensure the new thread inherits the current context.
-      Context.current = thread_context
+      Thread.current[:context] = thread_context
 
       Thread.handle_interrupt(ProcessTerminatedInterrupt => :never) do
         thread_ready_queue << true
@@ -394,7 +404,11 @@ class SystemCommand
     options[:err] = err_w
 
     pid = fork do
-      Process::UID.change_privilege(Process.euid) if reset_uid? && Process.euid != Process.uid
+      if run_as_real_uid? && Process.euid != Process.uid
+        Process::UID.change_privilege(Process.uid)
+      elsif reset_uid? && Process.euid != Process.uid
+        Process::UID.change_privilege(Process.euid)
+      end
 
       exec(
         env.merge({ "COLUMNS" => Tty.width.to_s }),
@@ -422,7 +436,7 @@ class SystemCommand
 
   sig { params(raw_stdin: IO).void }
   def write_input_to(raw_stdin)
-    input.each { raw_stdin.write(_1) }
+    input.each { raw_stdin.write(it) }
   end
 
   sig { params(sources: T::Array[IO], _block: T.proc.params(type: Symbol, line: String).void).void }

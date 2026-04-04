@@ -14,11 +14,9 @@ module Homebrew
       :environment_variables,
       :global_cask_options,
       :global_options,
-      :lead,
+      :project_leader,
+      :lead_maintainers,
       :maintainers,
-      :plc,
-      :tsc,
-      keyword_init: true,
     )
 
     SOURCE_PATH = T.let((HOMEBREW_LIBRARY_PATH/"manpages").freeze, Pathname)
@@ -55,16 +53,14 @@ module Homebrew
         global_cask_options:   global_cask_options_manpage,
         global_options:        global_options_manpage,
         environment_variables: env_vars_manpage,
-        lead:                  readme.read[/(Homebrew's \[Project Leader.*\.)/, 1]
-                                      .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
-        plc:                   readme.read[/(Homebrew's \[Project Leadership Committee.*\.)/, 1]
-                                      .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
-        tsc:                   readme.read[/(Homebrew's \[Technical Steering Committee.*\.)/, 1]
-                                      .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
-        maintainers:           readme.read[/(Homebrew's maintainers .*\.)/, 1]
-                                      .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
-        alumni:                readme.read[/(Former maintainers .*\.)/, 1]
-                                      .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
+        project_leader:        readme.read[/(Homebrew's \[Project Leader.*\.)/, 1]
+                               .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
+        lead_maintainers:      readme.read[/(Homebrew's \[Lead Maintainers.*\.)/, 1]
+                               .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
+        maintainers:           readme.read[/(Homebrew's other Maintainers .*\.)/, 1]
+                               .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
+        alumni:                readme.read[/(Former Maintainers .*\.)/, 1]
+                               .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1'),
       )
 
       ERB.new(template, trim_mode: ">").result(variables.instance_eval { binding })
@@ -81,7 +77,7 @@ module Homebrew
       man_page_lines = []
 
       # preserve existing manpage order
-      cmd_paths.sort_by { sort_key_for_path(_1) }
+      cmd_paths.sort_by { sort_key_for_path(it) }
                .each do |cmd_path|
         cmd_man_page_lines = if (cmd_parser = Homebrew::CLI::Parser.from_cmd_path(cmd_path))
           next if cmd_parser.hide_from_man_page

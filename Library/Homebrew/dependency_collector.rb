@@ -135,7 +135,7 @@ class DependencyCollector
 
   sig {
     params(spec: T.any(String, Resource, Symbol, Requirement, Dependency, Class),
-           tags: T::Array[T.any(String, Symbol)]).returns(T.any(Dependency, Requirement, Array, NilClass))
+           tags: T::Array[T.any(String, Symbol)]).returns(T.nilable(T.any(Dependency, Requirement, Array)))
   }
   def parse_spec(spec, tags)
     raise ArgumentError, "Implicit dependencies cannot be manually specified" if tags.include?(:implicit)
@@ -160,7 +160,7 @@ class DependencyCollector
 
   def parse_symbol_spec(spec, tags)
     # When modifying this list of supported requirements, consider
-    # whether `Formulary::API_SUPPORTED_REQUIREMENTS` should also be changed.
+    # whether `Homebrew::API::Formula::FormulaStructGenerator::API_SUPPORTED_REQUIREMENTS` should also be changed.
     case spec
     when :arch          then ArchRequirement.new(tags)
     when :codesign      then CodesignRequirement.new(tags)

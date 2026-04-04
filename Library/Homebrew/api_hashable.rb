@@ -38,4 +38,24 @@ module APIHashable
     @generating_hash ||= false
     @generating_hash == true
   end
+
+  sig { type_parameters(:U).params(value: T.type_parameter(:U)).returns(T.type_parameter(:U)) }
+  def deep_remove_placeholders(value)
+    return value if generating_hash?
+
+    value = case value
+    when Hash
+      value.transform_values { |v| deep_remove_placeholders(v) }
+    when Array
+      value.map { |v| deep_remove_placeholders(v) }
+    when String
+      value.gsub(HOMEBREW_HOME_PLACEHOLDER, Dir.home)
+           .gsub(HOMEBREW_PREFIX_PLACEHOLDER, HOMEBREW_PREFIX)
+           .gsub(HOMEBREW_CELLAR_PLACEHOLDER, HOMEBREW_CELLAR)
+    else
+      value
+    end
+
+    T.cast(value, T.type_parameter(:U))
+  end
 end

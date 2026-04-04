@@ -167,17 +167,6 @@ class Resource
     @livecheck_defined == true
   end
 
-  # Whether a livecheck specification is defined or not. This is a legacy alias
-  # for `#livecheck_defined?`.
-  #
-  # It returns `true` when a `livecheck` block is present in the {Resource}
-  # and `false` otherwise.
-  sig { returns(T::Boolean) }
-  def livecheckable?
-    odisabled "`livecheckable?`", "`livecheck_defined?`"
-    @livecheck_defined == true
-  end
-
   def sha256(val)
     @checksum = Checksum.new(val)
   end
@@ -416,7 +405,7 @@ end
 # The context in which a {Resource#stage} occurs. Supports access to both
 # the {Resource} and associated {Mktemp} in a single block argument. The interface
 # is back-compatible with {Resource} itself as used in that context.
-class ResourceStageContext
+class ResourceStageContext # rubocop:todo Style/OneClassPerFile
   extend Forwardable
 
   # The {Resource} that is being staged.

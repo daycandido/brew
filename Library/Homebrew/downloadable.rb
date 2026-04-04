@@ -14,7 +14,7 @@ module Downloadable
   abstract!
   requires_ancestor { Kernel }
 
-  sig { overridable.returns(T.any(NilClass, String, URL)) }
+  sig { overridable.returns(T.nilable(T.any(String, URL))) }
   attr_reader :url
 
   sig { overridable.returns(T.nilable(Checksum)) }
@@ -22,6 +22,20 @@ module Downloadable
 
   sig { overridable.returns(T::Array[String]) }
   attr_reader :mirrors
+
+  sig { overridable.returns(Symbol) }
+  attr_accessor :phase
+
+  sig { void }
+  def downloading! = (@phase = :downloading)
+  sig { void }
+  def downloaded! = (@phase = :downloaded)
+  sig { void }
+  def verifying! = (@phase = :verifying)
+  sig { void }
+  def verified! = (@phase = :verified)
+  sig { void }
+  def extracting! = (@phase = :extracting)
 
   sig { void }
   def initialize
@@ -32,6 +46,7 @@ module Downloadable
     @download_strategy = T.let(nil, T.nilable(T::Class[AbstractDownloadStrategy]))
     @downloader = T.let(nil, T.nilable(AbstractDownloadStrategy))
     @download_name = T.let(nil, T.nilable(String))
+    @phase = T.let(:preparing, Symbol)
   end
 
   sig { overridable.params(other: Downloadable).void }
@@ -56,6 +71,11 @@ module Downloadable
   sig { abstract.returns(String) }
   def download_queue_type; end
 
+  sig(:final) { returns(String) }
+  def download_queue_message
+    "#{download_queue_type} #{download_queue_name}"
+  end
+
   sig(:final) { returns(T::Boolean) }
   def downloaded?
     cached_download.exist?
@@ -69,6 +89,18 @@ module Downloadable
   sig { overridable.void }
   def clear_cache
     downloader.clear_cache
+  end
+
+  # Total bytes downloaded if available.
+  sig { overridable.returns(T.nilable(Integer)) }
+  def fetched_size
+    downloader.fetched_size
+  end
+
+  # Total download size if available.
+  sig { overridable.returns(T.nilable(Integer)) }
+  def total_size
+    @total_size ||= T.let(downloader.total_size, T.nilable(Integer))
   end
 
   sig { overridable.returns(T.nilable(Version)) }
@@ -103,6 +135,8 @@ module Downloadable
     ).returns(Pathname)
   }
   def fetch(verify_download_integrity: true, timeout: nil, quiet: false)
+    downloading!
+
     cache.mkpath
 
     begin
@@ -112,6 +146,8 @@ module Downloadable
       raise DownloadError.new(self, e)
     end
 
+    downloaded!
+
     download = cached_download
     verify_download_integrity(download) if verify_download_integrity
     download
@@ -119,9 +155,12 @@ module Downloadable
 
   sig { overridable.params(filename: Pathname).void }
   def verify_download_integrity(filename)
+    verifying!
+
     if filename.file?
       ohai "Verifying checksum for '#{filename.basename}'" if verbose?
       filename.verify_checksum(checksum)
+      verified!
     end
   rescue ChecksumMissingError
     return if silence_checksum_missing_error?

@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "cask/audit"
@@ -67,7 +68,7 @@ RSpec.describe Cask::Audit, :cask do
         expect(audit).to be_online
       end
 
-      it "implies `strict`" do
+      it "implies `strict`" do # rubocop:todo RSpec/AggregateExamples
         expect(audit).to be_strict
       end
     end
@@ -523,10 +524,26 @@ RSpec.describe Cask::Audit, :cask do
       end
     end
 
-    describe "livecheck should be skipped", :no_api do
+    describe "livecheck version validation", :no_api do
       let(:only) { ["livecheck_version"] }
       let(:online) { true }
       let(:message) { /Version '[^']*' differs from '[^']*' retrieved by livecheck\./ }
+
+      context "when `@livecheck_result` is already set" do
+        let(:cask_token) { "basic-cask" }
+
+        it "returns existing `@livecheck_result` value" do
+          audit.instance_variable_set(:@livecheck_result, :auto_detected)
+          expect(run).not_to error_with(message)
+          audit.instance_variable_set(:@livecheck_result, nil)
+        end
+      end
+
+      context "when `cask.version` is not set" do
+        let(:cask_token) { "missing-version" }
+
+        it { is_expected.not_to error_with(message) }
+      end
 
       context "when the Cask has a `livecheck` block using skip" do
         let(:cask_token) { "livecheck-skip" }
@@ -586,6 +603,50 @@ RSpec.describe Cask::Audit, :cask do
         let(:cask_token) { "livecheck-url-unversioned-reference" }
 
         it { is_expected.not_to error_with(message) }
+      end
+
+      context "when `latest_version` returns `nil`" do
+        let(:cask_token) { "basic-cask" }
+
+        it do
+          allow(Homebrew::Livecheck).to receive(:latest_version).and_return(nil)
+          expect(run).to error_with(message)
+        end
+      end
+
+      context "when the Cask is not throttled" do
+        let(:cask_token) { "basic-cask" }
+
+        it do
+          allow(Homebrew::Livecheck).to receive(:latest_version).and_return({
+            latest: Version.new("1.2.3"),
+          })
+          expect(run).not_to error_with(message)
+        end
+      end
+
+      context "when the Cask has a `livecheck` block using `throttle`" do
+        let(:cask_token) { "livecheck-throttle" }
+
+        it do
+          allow(Homebrew::Livecheck).to receive(:latest_version).and_return({
+            latest:           Version.new("1.2.6"),
+            latest_throttled: Version.new("1.2.5"),
+          })
+          expect(run).not_to error_with(message)
+        end
+      end
+
+      context "when the Cask has a `livecheck` block referencing a Cask that uses `throttle`" do
+        let(:cask_token) { "livecheck-throttle-reference" }
+
+        it do
+          allow(Homebrew::Livecheck).to receive(:latest_version).and_return({
+            latest:           Version.new("1.2.6"),
+            latest_throttled: Version.new("1.2.5"),
+          })
+          expect(run).not_to error_with(message)
+        end
       end
     end
 
@@ -854,6 +915,59 @@ RSpec.describe Cask::Audit, :cask do
       end
     end
 
+    describe "conflicts with" do
+      let(:only) { ["conflicts_with"] }
+      let(:tap) { CoreCaskTap.instance }
+
+      context "when the Cask has no conflicts" do
+        let(:cask_token) { "basic-cask" }
+
+        it { is_expected.to pass }
+      end
+
+      context "when all conflicting casks exist" do
+        let(:cask) do
+          tmp_cask "test-conflicts-cask", <<~RUBY
+            cask 'test-conflicts-cask' do
+              version '1.0'
+              url "https://brew.sh/index.html"
+              artifact "example.pdf", target: "/Library/Application Support/example"
+
+              conflicts_with cask: ["foo", "bar"]
+            end
+          RUBY
+        end
+
+        before do
+          allow(audit).to receive(:core_cask_tokens).and_return(%w[foo bar baz qux])
+          allow(cask).to receive(:tap).and_return(tap)
+        end
+
+        it { is_expected.to pass }
+      end
+
+      context "when conflicting casks are missing" do
+        let(:cask) do
+          tmp_cask "test-conflicts-cask", <<~RUBY
+            cask 'test-conflicts-cask' do
+              version '1.0'
+              url "https://brew.sh/index.html"
+              artifact "example.pdf", target: "/Library/Application Support/example"
+
+              conflicts_with cask: ["foo", "foo@1", "bar", "baz"]
+            end
+          RUBY
+        end
+
+        before do
+          allow(audit).to receive(:core_cask_tokens).and_return(["foo", "baz"])
+          allow(cask).to receive(:tap).and_return(tap)
+        end
+
+        it { is_expected.to error_with(/cask conflicts with non-existing cask/) }
+      end
+    end
+
     describe "denylist checks" do
       let(:only) { ["denylist"] }
 
@@ -998,7 +1112,7 @@ RSpec.describe Cask::Audit, :cask do
         expect(run).to pass
       end
 
-      it "when download fails it fails" do
+      it "when download fails it fails" do # rubocop:todo RSpec/AggregateExamples
         expect(download_double).to receive(:fetch).and_raise(StandardError.new(message))
         expect(run).to error_with(/#{message}/)
       end
@@ -1181,54 +1295,6 @@ RSpec.describe Cask::Audit, :cask do
                 homepage "https://brew.sh/"
                 app "Audit.app"
                 disable! date: "2021-01-01", because: :discontinued
-            end
-          RUBY
-        end
-
-        it "passes" do
-          expect(run).to pass
-        end
-      end
-    end
-
-    describe "checking `no_autobump!` message" do
-      let(:new_cask) { true }
-      let(:only) { ["no_autobump"] }
-      let(:cask_token) { "test-cask" }
-
-      context "when `no_autobump!` reason is not suitable for new cask" do
-        let(:cask) do
-          tmp_cask cask_token.to_s, <<~RUBY
-            cask '#{cask_token}' do
-              version "1.0"
-              sha256 "8dd95daa037ac02455435446ec7bc737b34567afe9156af7d20b2a83805c1d8a"
-              url "https://brew.sh/foo.zip"
-              name "Audit"
-              desc "Cask Auditor"
-              homepage "https://brew.sh/"
-              app "Audit.app"
-              no_autobump! because: :requires_manual_review
-            end
-          RUBY
-        end
-
-        it "fails" do
-          expect(run).to error_with(/use a different reason instead/)
-        end
-      end
-
-      context "when `no_autobump!` reason is allowed" do
-        let(:cask) do
-          tmp_cask cask_token.to_s, <<~RUBY
-            cask '#{cask_token}' do
-              version "1.0"
-              sha256 "8dd95daa037ac02455435446ec7bc737b34567afe9156af7d20b2a83805c1d8a"
-              url "https://brew.sh/foo.zip"
-              name "Audit"
-              desc "Cask Auditor"
-              homepage "https://brew.sh/"
-              app "Audit.app"
-              no_autobump! because: "foo bar"
             end
           RUBY
         end

@@ -162,7 +162,7 @@ module Homebrew
     def template
       <<~ERB
         # Documentation: https://docs.brew.sh/Formula-Cookbook
-        #                https://rubydoc.brew.sh/Formula
+        #                https://docs.brew.sh/rubydoc/Formula
         # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
         class #{Formulary.class_s(name)} < Formula
         <% if @mode == :python %>
@@ -186,6 +186,9 @@ module Homebrew
         <% if @mode == :cabal %>
           depends_on "cabal-install" => :build
           depends_on "ghc" => :build
+          depends_on "gmp"
+
+          uses_from_macos "libffi"
         <% elsif @mode == :cmake %>
           depends_on "cmake" => :build
         <% elsif @mode == :crystal %>
@@ -202,7 +205,7 @@ module Homebrew
         <% elsif @mode == :python %>
           depends_on "#{latest_versioned_formula("python")}"
         <% elsif @mode == :ruby %>
-          uses_from_macos "ruby"
+          depends_on "ruby"
         <% elsif @mode == :rust %>
           depends_on "rust" => :build
         <% elsif @mode == :zig %>
@@ -229,7 +232,7 @@ module Homebrew
             system "cmake", "--install", "build"
         <% elsif @mode == :autotools %>
             # Remove unrecognized options if they cause configure to fail
-            # https://rubydoc.brew.sh/Formula.html#std_configure_args-instance_method
+            # https://docs.brew.sh/rubydoc/Formula.html#std_configure_args-instance_method
             system "./configure", "--disable-silent-rules", *std_configure_args
             system "make", "install" # if this fails, try separate make/make install steps
         <% elsif @mode == :crystal %>
@@ -243,7 +246,7 @@ module Homebrew
             system "meson", "install", "-C", "build"
         <% elsif @mode == :node %>
             system "npm", "install", *std_npm_args
-            bin.install_symlink Dir["\#{libexec}/bin/*"]
+            bin.install_symlink libexec.glob("bin/*")
         <% elsif @mode == :perl %>
             ENV.prepend_create_path "PERL5LIB", libexec/"lib/perl5"
             ENV.prepend_path "PERL5LIB", libexec/"lib"
@@ -267,10 +270,11 @@ module Homebrew
         <% elsif @mode == :python %>
             virtualenv_install_with_resources
         <% elsif @mode == :ruby %>
+            ENV["BUNDLE_FORCE_RUBY_PLATFORM"] = "1"
+            ENV["BUNDLE_WITHOUT"] = "development test"
             ENV["BUNDLE_VERSION"] = "system" # Avoid installing Bundler into the keg
             ENV["GEM_HOME"] = libexec
 
-            system "bundle", "config", "set", "without", "development", "test"
             system "bundle", "install"
             system "gem", "build", "\#{name}.gemspec"
             system "gem", "install", "\#{name}-\#{version}.gem"
@@ -283,7 +287,7 @@ module Homebrew
             system "zig", "build", *std_zig_args
         <% else %>
             # Remove unrecognized options if they cause configure to fail
-            # https://rubydoc.brew.sh/Formula.html#std_configure_args-instance_method
+            # https://docs.brew.sh/rubydoc/Formula.html#std_configure_args-instance_method
             system "./configure", "--disable-silent-rules", *std_configure_args
             # system "cmake", "-S", ".", "-B", "build", *std_cmake_args
         <% end %>

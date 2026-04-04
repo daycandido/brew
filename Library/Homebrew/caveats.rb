@@ -66,6 +66,7 @@ class Caveats
   sig { params(skip_reason: T::Boolean).returns(T.nilable(String)) }
   def keg_only_text(skip_reason: false)
     return unless formula.keg_only?
+    return if formula.linked?
 
     s = if skip_reason
       ""

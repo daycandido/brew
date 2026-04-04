@@ -105,7 +105,7 @@ module Utils
 
       sig {
         params(root_url: String, name: String, checksum: T.any(Checksum, String),
-               filename: T.nilable(Bottle::Filename)).returns(T.any([String, T.nilable(String)], String))
+               filename: T.nilable(Bottle::Filename)).returns(T.nilable(T.any([String, T.nilable(String)], String)))
       }
       def path_resolved_basename(root_url, name, checksum, filename)
         if root_url.match?(GitHubPackages::URL_REGEX)
@@ -122,7 +122,7 @@ module Utils
         tabfile = keg/AbstractTab::FILENAME
         bottle_json_path = formula.local_bottle_path&.sub(/\.(\d+\.)?tar\.gz$/, ".json")
 
-        if (tab_attributes = formula.bottle_tab_attributes.presence)
+        if bottle_json_path.nil? && (tab_attributes = formula.bottle_tab_attributes.presence)
           tab = Tab.from_file_content(tab_attributes.to_json, tabfile)
           return tab if tab.built_on["os"] == HOMEBREW_SYSTEM
         elsif !tabfile.exist? && bottle_json_path&.exist?

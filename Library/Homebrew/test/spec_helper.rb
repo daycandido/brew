@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 if ENV["HOMEBREW_TESTS_COVERAGE"]
@@ -24,6 +25,8 @@ end
 
 require_relative "../standalone"
 require_relative "../warnings"
+
+require "test-prof"
 
 Warnings.ignore :parser_syntax do
   require "rubocop"
@@ -64,6 +67,7 @@ TEST_DIRECTORIES = [
   HOMEBREW_LOCKS,
   HOMEBREW_LOGS,
   HOMEBREW_TEMP,
+  HOMEBREW_TEMP_CELLAR,
   HOMEBREW_ALIASES,
 ].freeze
 
@@ -143,6 +147,11 @@ RSpec.configure do |config|
   config.include(Test::Helper::Fixtures)
   config.include(Test::Helper::Formula)
   config.include(Test::Helper::MkTmpDir)
+
+  # Enable aggregate failures by default
+  config.define_derived_metadata do |metadata|
+    metadata[:aggregate_failures] = true unless metadata.key?(:aggregate_failures)
+  end
 
   config.before(:each, :needs_linux) do
     skip "Not running on Linux." unless OS.linux?
@@ -310,7 +319,6 @@ RSpec.configure do |config|
         CoreTap.instance.path/"tap_migrations.json",
         CoreTap.instance.path/"audit_exceptions",
         CoreTap.instance.path/"style_exceptions",
-        CoreTap.instance.path/"pypi_formula_mappings.json",
         *Pathname.glob("#{HOMEBREW_CELLAR}/*/"),
         HOMEBREW_LIBRARY_PATH/"test/.vscode",
         HOMEBREW_LIBRARY_PATH/"test/.cursor",

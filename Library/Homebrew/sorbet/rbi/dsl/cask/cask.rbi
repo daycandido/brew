@@ -57,6 +57,9 @@ class Cask::Cask
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
   def deprecate!(*args, &block); end
 
+  sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
+  def deprecate_args(*args, &block); end
+
   sig { params(args: T.untyped, block: T.untyped).returns(T::Boolean) }
   def deprecated?(*args, &block); end
 
@@ -82,6 +85,9 @@ class Cask::Cask
   def disable!(*args, &block); end
 
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
+  def disable_args(*args, &block); end
+
+  sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
   def disable_date(*args, &block); end
 
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
@@ -101,6 +107,9 @@ class Cask::Cask
 
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
   def font(*args, &block); end
+
+  sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
+  def generate_completions_from_executable(*args, &block); end
 
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
   def homepage(*args, &block); end
@@ -125,9 +134,6 @@ class Cask::Cask
 
   sig { params(args: T.untyped, block: T.untyped).returns(T::Boolean) }
   def livecheck_defined?(*args, &block); end
-
-  sig { params(args: T.untyped, block: T.untyped).returns(T::Boolean) }
-  def livecheckable?(*args, &block); end
 
   sig { params(args: T.untyped, block: T.untyped).returns(T.untyped) }
   def manpage(*args, &block); end

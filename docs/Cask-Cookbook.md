@@ -129,7 +129,7 @@ Each of the following stanzas is required for every cask.
 
 ### At least one artifact stanza is also required
 
-Each cask must declare one or more [artifacts](https://rubydoc.brew.sh/Cask/Artifact) (i.e. something to install).
+Each cask must declare one or more [artifacts](/rubydoc/Cask/Artifact.html) (i.e. something to install).
 
 | name                             | multiple occurrences allowed? | value |
 | -------------------------------- | :---------------------------: | ----- |
@@ -256,7 +256,7 @@ Behaviour and usage of `target:` is [the same as with `app`](#renaming-the-targe
 ### Stanza: `rename`
 
 The `rename` stanza provides a convenience method to rename files to provide more practical access to them.
-This stanza should be used sparingly, and is reserved for scenarios where a the path of a file/directory is impossible to pre-determine.
+This stanza should be used sparingly, and is reserved for scenarios where the path of a file/directory is impossible to pre-determine.
 
 The example below can be used when the `pkg` path has a value such as timestamp that can't be detected without extracting the archive it is distributed within.
 
@@ -291,7 +291,7 @@ caveats "Using #{token} may be hazardous to your health."
 
 #### `caveats` as a block
 
-When `caveats` is a Ruby block, evaluation is deferred until install time. Within a block you may refer to the `@cask` instance variable, and invoke [any method available on `@cask`](https://rubydoc.brew.sh/Cask/Cask).
+When `caveats` is a Ruby block, evaluation is deferred until install time. Within a block you may refer to the `@cask` instance variable, and invoke [any method available on `@cask`](/rubydoc/Cask/Cask.html).
 
 #### `caveats` mini-DSL
 
@@ -371,7 +371,7 @@ depends_on formula: "unar"
 
 ##### Requiring an exact macOS release
 
-The value for `depends_on macos:` may be a symbol or an array of symbols, listing the exact compatible macOS releases. The values for supported macOS releases can be found in the [`MacOSVersion` class](https://rubydoc.brew.sh/MacOSVersion) documentation.
+The value for `depends_on macos:` may be a symbol or an array of symbols, listing the exact compatible macOS releases. The values for supported macOS releases can be found in the [`MacOSVersion` class](/rubydoc/MacOSVersion.html) documentation.
 
 Only major releases are covered (10.x numbers containing a single dot or whole numbers since macOS 11). The symbol form is used for readability. The following are all valid ways to enumerate the exact macOS release requirements for a cask:
 
@@ -449,7 +449,7 @@ The `because:` parameter can also accept a symbol that corresponds to a preset r
 deprecate! date: "YYYY-MM-DD", because: :discontinued
 ```
 
-A complete list of allowable symbols can be found in the [`DeprecateDisable` module](https://rubydoc.brew.sh/DeprecateDisable) documentation.
+A complete list of allowable symbols can be found in the [`DeprecateDisable` module](/rubydoc/DeprecateDisable.html) documentation.
 
 #### `replacement_formula:` / `replacement_cask:` parameter
 
@@ -527,7 +527,7 @@ The stanzas `preflight`, `postflight`, `uninstall_preflight`, and `uninstall_pos
 
 #### Evaluation of blocks is always deferred
 
-The Ruby blocks defined by these stanzas are not evaluated until install time or uninstall time. Within a block you may refer to the `@cask` instance variable, and invoke [any method available on `@cask`](https://rubydoc.brew.sh/Cask/Cask).
+The Ruby blocks defined by these stanzas are not evaluated until install time or uninstall time. Within a block you may refer to the `@cask` instance variable, and invoke [any method available on `@cask`](/rubydoc/Cask/Cask.html).
 
 #### `*flight` mini-DSL
 
@@ -649,13 +649,13 @@ Refer to the [`brew livecheck`](Brew-Livecheck.md) documentation for how to writ
 
 The `no_autobump!` stanza excludes a cask from the autobump list. This means all updates are to be handled manually by submitting pull requests to the `Homebrew/homebrew-cask` repository.
 
-`no_autobump!` requires a reason to be provided with the `because:` paramater. It accepts a string or a symbol that corresponds to a preset reason, for example:
+`no_autobump!` requires a reason to be provided with the `because:` parameter. It accepts a string or a symbol that corresponds to a preset reason, for example:
 
 ```ruby
 no_autobump! because: :incompatible_version_format
 ```
 
-A complete list of allowed symbols can be found in [`NO_AUTOBUMP_REASONS_LIST`](https://rubydoc.brew.sh/top-level-namespace#NO_AUTOBUMP_REASONS_LIST-constant).
+A complete list of allowed symbols can be found in [`NO_AUTOBUMP_REASONS_LIST`](/rubydoc/top-level-namespace.html#NO_AUTOBUMP_REASONS_LIST-constant).
 
 Casks that use `strategy :extract_plist` in their `livecheck` block or have `version :latest` are always excluded from the autobump list and do not require `no_autobump!` to be declared.
 
@@ -794,8 +794,9 @@ The easiest and most useful `uninstall` directive is [`pkgutil:`](#uninstall-pkg
 
 * **`early_script:`** (string or hash) - like [`script:`](#uninstall-script), but runs early (for special cases, best avoided)
 * [`launchctl:`](#uninstall-launchctl) (string or array) - IDs of `launchd` jobs to remove
-* [`quit:`](#uninstall-quit) (string or array) - bundle IDs of running applications to quit (does not run when uninstall is initiated by `brew upgrade` or `brew reinstall`)
-* [`signal:`](#uninstall-signal) (array of arrays) - signal numbers and bundle IDs of running applications to send a Unix signal to, for when `quit:` does not work (does not run when uninstall is initiated by `brew upgrade` or `brew reinstall`)
+* [`quit:`](#uninstall-quit) (string or array) - bundle IDs of running applications to quit (does not run when uninstall is initiated by `brew upgrade` or `brew reinstall` unless specified in `on_upgrade:`)
+* [`signal:`](#uninstall-signal) (array of arrays) - signal numbers and bundle IDs of running applications to send a Unix signal to, for when `quit:` does not work (does not run when uninstall is initiated by `brew upgrade` or `brew reinstall` unless specified in `on_upgrade:`)
+* **`on_upgrade:`** (symbol or array) - symbols of uninstall keys (either `:quit` or `:signal`) to optionally run also during `brew upgrade` and `brew reinstall`
 * [`login_item:`](#uninstall-login_item) (string or array) - names of login items to remove
 * [`kext:`](#uninstall-kext) (string or array) - bundle IDs of kexts to unload from the system
 * [`script:`](#uninstall-script) (string or hash) - relative path to an uninstall script to be run via *sudo*; use hash if args are needed
@@ -852,6 +853,15 @@ IDs for all installed `launchd` jobs can be listed using [`list_installed_launch
 
 #### `uninstall` *quit*
 
+Some applications need to be quit (or explicitly signaled) in order to be safely upgraded in-place. By default, Homebrew does not run `:quit` or `:signal` directives when an uninstall is being performed as part of a `brew upgrade` or `brew reinstall` operation. This avoids unexpectedly terminating user processes during automated upgrades and is designed to avoid data loss; `uninstall quit:` is equivalent to a normal macOS quit and can still discard unsaved in-memory state such as web forms or editor buffers.
+
+When the application genuinely needs to be closed to upgrade or reinstall correctly and you have verified that it handles a normal macOS quit without losing important user data, you may opt a cask into running this directive during an upgrade or reinstall by including `:quit` in the `on_upgrade:` key:
+
+```ruby
+uninstall quit:       "com.example.app",
+          on_upgrade: :quit
+```
+
 Bundle IDs for currently running applications can be listed using [`list_running_app_ids`](https://github.com/Homebrew/homebrew-cask/blob/HEAD/developer/bin/list_running_app_ids):
 
 ```bash
@@ -891,6 +901,21 @@ uninstall signal: [
 Note that when multiple running processes match the given bundle ID, all matching processes will be signaled.
 
 Unlike `quit:` directives, Unix signals originate from the current user, not from the superuser. This is construed as a safety feature, since the superuser is capable of bringing down the system via signals. However, this inconsistency could also be considered a bug, and may be addressed in some fashion in a future version.
+
+Like `quit:` directives, `signal:` directives are skipped on upgrade and reinstall. You may opt a cask into running this directive during an upgrade or reinstall by including `:signal` in the `on_upgrade:` key:
+
+```ruby
+uninstall signal:     [["TERM", "com.example.daemon"]],
+          on_upgrade: :signal
+```
+
+You can opt-in to both quit and signal together:
+
+```ruby
+uninstall quit:       "com.example.app",
+          signal:     [["TERM", "com.example.app"]],
+          on_upgrade: [:quit, :signal]
+```
 
 #### `uninstall` *login_item*
 
@@ -1072,7 +1097,7 @@ Other providers may use URLs that change periodically, or even on each visit (ex
 
 ### Stanza: `version`
 
-`version`, while related to the app’s own versioning, doesn’t have to follow it exactly. It is common to change it slightly so it can be [interpolated](https://en.wikipedia.org/wiki/String_interpolation#Ruby_/_Crystal) in other stanzas, usually in `url` to create a cask that only needs `version` and `sha256` changes when updated. This can be taken further, when needed, with [Ruby `String` methods](https://ruby-doc.org/core/String.html).
+`version`, while related to the app’s own versioning, doesn’t have to follow it exactly. It is common to change it slightly so it can be [interpolated](https://en.wikipedia.org/wiki/String_interpolation#Ruby/Crystal) in other stanzas, usually in `url` to create a cask that only needs `version` and `sha256` changes when updated. This can be taken further, when needed, with [Ruby `String` methods](https://ruby-doc.org/core/String.html).
 
 For example, instead of:
 
@@ -1165,7 +1190,7 @@ Example: [dropbox.rb](https://github.com/Homebrew/homebrew-cask/blob/974a55ade77
 
 #### `zap` creation
 
-The simplest method is to use [@nrlquaker's CreateZap](https://github.com/nrlquaker/homebrew-createzap), which can automatically generate the stanza. In a few instances it may fail to pick up anything and manual creation may be required.
+The simplest method is to use `brew generate-zap`, which scans the system for associated files and directories to automatically generate the stanza. The target application should have been launched at least once so that preference files and caches exist on disk. In a few instances it may fail to pick up anything and manual creation may be required.
 
 Manual creation can be facilitated with:
 
@@ -1225,7 +1250,7 @@ To adjust the installed version depending on the current macOS release, use a se
 
 ```ruby
 cask "calibre" do
-  on_high_sierra :or_older do
+  on_sonoma :or_older do
     version "3.48.0"
     sha256 "68829cd902b8e0b2b7d5cf7be132df37bcc274a1e5720b4605d2dd95f3a29168"
 
@@ -1233,13 +1258,10 @@ cask "calibre" do
       skip "Legacy version"
     end
   end
-  on_mojave do
+  on_sequoia do
     # ...
   end
-  on_catalina do
-    # ...
-  end
-  on_big_sur :or_newer do
+  on_tahoe :or_newer do
     version "6.25.0"
     sha256 "a7ed19ae0526630ccb138b9afee6dc5169904180b02f7a3089e78d3e0022753b"
 
@@ -1326,9 +1348,9 @@ Details of software names and brands will inevitably be lost in the conversion t
 
 * If the version number is arranged to occur in the middle of the App name, it should also be removed.
 
-* Remove from the end: “Launcher”, “Quick Launcher”.
+* Remove from the end: “Launcher”, “Quick Launcher”, "Desktop", "for Desktop".
 
-* Remove from the end: strings such as “Desktop”, “for Desktop”.
+  * Exception: when the suffix is an intrinsic part of the product name, as in [Docker Desktop.app](https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/d/docker-desktop.rb).
 
 * Remove from the end: strings such as “Mac”, “for Mac”, “for OS X”, “macOS”, “for macOS”. These terms are generally added to ported software such as “MAME OS X.app”.
 

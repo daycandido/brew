@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "utils/output"
@@ -67,6 +68,48 @@ RSpec.describe Utils::Output do
 
       it "returns plain text" do
         expect(pretty_uninstalled_output).to eq("foo")
+      end
+    end
+  end
+
+  describe "#pretty_deprecated" do
+    subject(:pretty_deprecated_output) { described_class.pretty_deprecated("foo") }
+
+    context "when $stdout is a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(true) }
+
+      it "returns a string with a colored (deprecated) label" do
+        expect(pretty_deprecated_output)
+          .to match(/foo #{esc 33}\(deprecated\)#{esc 0}/)
+      end
+    end
+
+    context "when $stdout is not a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(false) }
+
+      it "returns plain text" do
+        expect(pretty_deprecated_output).to eq("foo")
+      end
+    end
+  end
+
+  describe "#pretty_disabled" do
+    subject(:pretty_disabled_output) { described_class.pretty_disabled("foo") }
+
+    context "when $stdout is a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(true) }
+
+      it "returns a string with a colored (disabled) label" do
+        expect(pretty_disabled_output)
+          .to match(/foo #{esc 31}\(disabled\)#{esc 0}/)
+      end
+    end
+
+    context "when $stdout is not a TTY" do
+      before { allow($stdout).to receive(:tty?).and_return(false) }
+
+      it "returns plain text" do
+        expect(pretty_disabled_output).to eq("foo")
       end
     end
   end

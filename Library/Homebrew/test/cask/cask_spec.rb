@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 RSpec.describe Cask::Cask, :cask do
@@ -37,12 +38,24 @@ RSpec.describe Cask::Cask, :cask do
     it "returns an instance of the Cask from a specific file location" do
       c = Cask::CaskLoader.load("#{tap_path}/Casks/local-caffeine.rb")
       expect(c).to be_a(described_class)
+      expect(c).not_to be_loaded_from_api
+      expect(c).not_to be_loaded_from_internal_api
       expect(c.token).to eq("local-caffeine")
     end
 
     it "returns an instance of the Cask from a JSON file" do
       c = Cask::CaskLoader.load("#{TEST_FIXTURE_DIR}/cask/caffeine.json")
       expect(c).to be_a(described_class)
+      expect(c).to be_loaded_from_api
+      expect(c).not_to be_loaded_from_internal_api
+      expect(c.token).to eq("caffeine")
+    end
+
+    it "returns an instance of the Cask from an internal JSON file" do
+      c = Cask::CaskLoader.load("#{TEST_FIXTURE_DIR}/cask/caffeine.internal.json")
+      expect(c).to be_a(described_class)
+      expect(c).to be_loaded_from_api
+      expect(c).to be_loaded_from_internal_api
       expect(c.token).to eq("caffeine")
     end
 
@@ -299,12 +312,92 @@ RSpec.describe Cask::Cask, :cask do
     end
   end
 
+  describe "#contains_os_specific_artifacts?" do
+    it "returns false when there are no OSes defined" do
+      cask = described_class.new("test-no-os") do
+        version "0.0.1,2"
+
+        url "https://brew.sh/test-0.0.1.dmg"
+        name "Test"
+        desc "Test cask"
+        homepage "https://brew.sh"
+      end
+
+      expect(cask.contains_os_specific_artifacts?).to be false
+    end
+
+    it "returns false when there are no artifacts" do
+      cask = described_class.new("test-os-no-artifacts") do
+        os macos: "mac", linux: "Linux"
+        version "0.0.1,2"
+
+        url "https://brew.sh/test-0.0.1.dmg"
+        name "Test"
+        desc "Test cask"
+        homepage "https://brew.sh"
+      end
+
+      expect(cask.contains_os_specific_artifacts?).to be false
+    end
+
+    it "returns false when there are scoped app" do
+      cask = described_class.new("test-macos-app-artifact") do
+        version "0.0.1,2"
+
+        url "https://brew.sh/test-0.0.1.dmg"
+        name "Test"
+        desc "Test cask"
+        homepage "https://brew.sh"
+
+        on_macos do
+          app "Test.app"
+        end
+      end
+
+      expect(cask.contains_os_specific_artifacts?).to be false
+    end
+
+    it "returns false when version is only defined in on_* blocks and referenced at top level" do
+      cask = described_class.new("test-version-in-on-blocks") do
+        on_monterey :or_newer do
+          version "2.0"
+        end
+        on_big_sur :or_older do
+          version "1.0"
+        end
+
+        url "https://brew.sh/test-#{version.major}.dmg"
+        name "Test"
+        desc "Test cask"
+        homepage "https://brew.sh"
+      end
+
+      expect(cask.contains_os_specific_artifacts?).to be false
+    end
+
+    it "returns true when there are unscoped app artifacts" do
+      cask = described_class.new("test-os-app-artifact") do
+        os macos: "mac", linux: "Linux"
+        version "0.0.1,2"
+
+        url "https://brew.sh/test-0.0.1.dmg"
+        name "Test"
+        desc "Test cask"
+        homepage "https://brew.sh"
+
+        app "Test.app"
+      end
+
+      expect(cask.contains_os_specific_artifacts?).to be true
+    end
+  end
+
   describe "#to_h" do
     let(:expected_json) { (TEST_FIXTURE_DIR/"cask/everything.json").read.strip }
 
     context "when loaded from cask file" do
       it "returns expected hash" do
-        allow(MacOS).to receive(:version).and_return(MacOSVersion.new("13"))
+        allow(MacOS).to receive(:version).and_return(MacOSVersion.new("14"))
 
         cask = Cask::CaskLoader.load("everything")
 
@@ -504,6 +597,7 @@ RSpec.describe Cask::Cask, :cask do
         hash = cask.to_hash_with_variations
 
         expect(cask.loaded_from_api?).to be true
+        expect(cask.loaded_from_internal_api?).to be false
         expect(hash).to be_a(Hash)
         expect(JSON.pretty_generate(hash)).to eq(expected_json)
       end

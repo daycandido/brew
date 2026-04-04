@@ -47,10 +47,16 @@ module Cask
              "We'll set permissions properly so we won't need sudo in the future."
       end
 
-      SystemCommand.run("/bin/mkdir", args: ["-p", path], sudo:)
-      SystemCommand.run("/bin/chmod", args: ["g+rwx", path], sudo:)
-      SystemCommand.run("/usr/sbin/chown", args: [User.current.to_s, path], sudo:)
-      SystemCommand.run("/usr/bin/chgrp", args: ["admin", path], sudo:)
+      SystemCommand.run("mkdir", args: ["-p", path], sudo:)
+      SystemCommand.run("chmod", args: ["g+rwx", path], sudo:)
+      SystemCommand.run("chown", args: [User.current.to_s, path], sudo:)
+
+      chgrp_path(path, sudo)
+    end
+
+    sig { params(path: Pathname, sudo: T::Boolean).void }
+    def self.chgrp_path(path, sudo)
+      SystemCommand.run("chgrp", args: ["admin", path], sudo:)
     end
 
     # Get all installed casks.
@@ -65,7 +71,9 @@ module Cask
       rescue
         # Don't blow up because of a single unavailable cask.
         nil
-      end
+      end.select(&:installed?)
     end
   end
 end
+
+require "extend/os/cask/caskroom"

@@ -80,24 +80,16 @@ module Homebrew
         @to_formulae_and_casks ||= T.let(
           {}, T.nilable(T::Hash[T.nilable(Symbol), T::Array[T.any(Formula, Keg, Cask::Cask)]])
         )
-        @to_formulae_and_casks[only] ||= begin
-          download_queue = Homebrew::DownloadQueue.new_if_concurrency_enabled
-
-          formulae_and_casks = downcased_unique_named.flat_map do |name|
-            load_and_fetch_full_formula_or_cask(name, only:, method:, warn:, download_queue:)
-          rescue FormulaUnreadableError, FormulaClassUnavailableError,
-                 TapFormulaUnreadableError, TapFormulaClassUnavailableError,
-                 Cask::CaskUnreadableError
-            # Need to rescue before `*UnavailableError` (superclass of this)
-            # The formula/cask was found, but there's a problem with its implementation
-            raise
-          rescue NoSuchKegError, FormulaUnavailableError, Cask::CaskUnavailableError, FormulaOrCaskUnavailableError
-            ignore_unavailable ? [] : raise
-          end
-
-          download_queue&.fetch
-
-          map_to_fully_loaded(formulae_and_casks)
+        @to_formulae_and_casks[only] ||= downcased_unique_named.flat_map do |name|
+          load_formula_or_cask(name, only:, method:, warn:)
+        rescue FormulaUnreadableError, FormulaClassUnavailableError,
+               TapFormulaUnreadableError, TapFormulaClassUnavailableError,
+               Cask::CaskUnreadableError
+          # Need to rescue before `*UnavailableError` (superclass of this)
+          # The formula/cask was found, but there's a problem with its implementation
+          raise
+        rescue NoSuchKegError, FormulaUnavailableError, Cask::CaskUnavailableError, FormulaOrCaskUnavailableError
+          ignore_unavailable ? [] : raise
         end.freeze
 
         if uniq
@@ -149,29 +141,23 @@ module Homebrew
 
       sig {
         params(only: T.nilable(Symbol), method: T.nilable(Symbol))
-          .returns(T::Array[T.any(Formula, Keg, Cask::Cask, T::Array[Keg], FormulaOrCaskUnavailableError)])
+          .returns(T::Array[T.any(Formula, Keg, Cask::Cask, T::Array[Keg],
+                                  FormulaOrCaskUnavailableError, NoSuchKegError)])
       }
       def to_formulae_and_casks_and_unavailable(only: parent.only_formula_or_cask, method: nil)
         @to_formulae_casks_unknowns ||= T.let(
           {},
           T.nilable(T::Hash[
             T.nilable(Symbol),
-            T::Array[T.any(Formula, Keg, Cask::Cask, T::Array[Keg], FormulaOrCaskUnavailableError)],
+            T::Array[T.any(Formula, Keg, Cask::Cask, T::Array[Keg],
+                           FormulaOrCaskUnavailableError, NoSuchKegError)],
           ]),
         )
-        @to_formulae_casks_unknowns[method] = begin
-          download_queue = Homebrew::DownloadQueue.new_if_concurrency_enabled
-
-          formulae_and_casks = downcased_unique_named.map do |name|
-            load_and_fetch_full_formula_or_cask(name, only:, method:, download_queue:)
-          rescue FormulaOrCaskUnavailableError => e
-            e
-          end.uniq
-
-          download_queue&.fetch
-
-          map_to_fully_loaded(formulae_and_casks)
-        end.freeze
+        @to_formulae_casks_unknowns[method] = downcased_unique_named.map do |name|
+          load_formula_or_cask(name, only:, method:)
+        rescue FormulaOrCaskUnavailableError, NoSuchKegError => e
+          e
+        end.uniq.freeze
       end
 
       sig { params(uniq: T::Boolean).returns(T::Array[Formula]) }
@@ -342,17 +328,6 @@ module Homebrew
       end
 
       sig {
-        params(name: String, only: T.nilable(Symbol), method: T.nilable(Symbol), warn: T::Boolean,
-               download_queue: T.nilable(Homebrew::DownloadQueue))
-          .returns(T.any(Formula, Keg, Cask::Cask, T::Array[Keg]))
-      }
-      def load_and_fetch_full_formula_or_cask(name, only: nil, method: nil, warn: false, download_queue: nil)
-        formula_or_cask = load_formula_or_cask(name, only:, method:, warn:)
-        formula_or_cask.fetch_fully_loaded_formula!(download_queue:) if formula_or_cask.is_a?(Formula)
-        formula_or_cask
-      end
-
-      sig {
         params(name: String, only: T.nilable(Symbol), method: T.nilable(Symbol), warn: T::Boolean)
           .returns(T.any(Formula, Keg, Cask::Cask, T::Array[Keg]))
       }
@@ -364,8 +339,7 @@ module Homebrew
             begin
               case method
               when nil, :factory
-                Formulary.factory(name, *@override_spec,
-                                  warn:, force_bottle: @force_bottle, flags: @flags, prefer_stub: true)
+                Formulary.factory(name, *@override_spec, warn:, force_bottle: @force_bottle, flags: @flags)
               when :resolve
                 resolve_formula(name)
               when :latest_kegs
@@ -485,7 +459,7 @@ module Homebrew
 
       sig { params(name: String).returns(Formula) }
       def resolve_formula(name)
-        Formulary.resolve(name, spec: @override_spec, force_bottle: @force_bottle, flags: @flags, prefer_stub: true)
+        Formulary.resolve(name, spec: @override_spec, force_bottle: @force_bottle, flags: @flags)
       end
 
       sig { params(name: String).returns([Pathname, T::Array[Keg]]) }
@@ -569,7 +543,7 @@ module Homebrew
       sig {
         params(
           ref: String, loaded_type: String,
-          package: T.any(T::Array[T.any(Formula, Keg)], Cask::Cask, Formula, Keg, NilClass)
+          package: T.nilable(T.any(T::Array[T.any(Formula, Keg)], Cask::Cask, Formula, Keg))
         ).returns(String)
       }
       def package_conflicts_message(ref, loaded_type, package)
@@ -614,19 +588,6 @@ module Homebrew
         return if cask&.old_tokens&.include?(ref)
 
         opoo package_conflicts_message(ref, loaded_type, cask)
-      end
-
-      sig {
-        type_parameters(:U)
-          .params(formulae_and_casks: T::Array[T.all(T.type_parameter(:U), Object)])
-          .returns(T::Array[T.all(T.type_parameter(:U), Object)])
-      }
-      def map_to_fully_loaded(formulae_and_casks)
-        formulae_and_casks.map do |formula_or_cask|
-          next formula_or_cask unless formula_or_cask.is_a?(Formula)
-
-          T.cast(formula_or_cask.fully_loaded_formula, T.all(T.type_parameter(:U), Object))
-        end
       end
     end
   end

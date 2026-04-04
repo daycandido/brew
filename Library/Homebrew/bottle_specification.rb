@@ -1,12 +1,15 @@
-# typed: true # rubocop:todo Sorbet/StrictSigil
+# typed: strict
 # frozen_string_literal: true
 
 class BottleSpecification
+  include Utils::Output::Mixin
+
   RELOCATABLE_CELLARS = [:any, :any_skip_relocation].freeze
 
   sig { returns(T.nilable(Tap)) }
   attr_accessor :tap
 
+  sig { returns(Utils::Bottles::Collector) }
   attr_reader :collector
 
   sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -29,6 +32,7 @@ class BottleSpecification
     val.nil? ? @rebuild : @rebuild = val
   end
 
+  sig { params(var: T.nilable(String), specs: T::Hash[Symbol, T.untyped]).returns(String) }
   def root_url(var = nil, specs = {})
     if var.nil?
       @root_url ||= if (github_packages_url = GitHubPackages.root_url_if_match(Homebrew::EnvConfig.bottle_domain))
@@ -43,12 +47,18 @@ class BottleSpecification
         var
       end
       @root_url_specs.merge!(specs)
+      @root_url
     end
   end
 
+  sig { override.params(other: BasicObject).returns(T::Boolean) }
   def ==(other)
-    self.class == other.class && rebuild == other.rebuild && collector == other.collector &&
-      root_url == other.root_url && root_url_specs == other.root_url_specs && tap == other.tap
+    case other
+    when self.class
+      rebuild == other.rebuild && collector == other.collector &&
+        root_url == other.root_url && root_url_specs == other.root_url_specs && tap == other.tap
+    else false
+    end
   end
   alias eql? ==
 
@@ -86,7 +96,7 @@ class BottleSpecification
     spec&.cellar == :any_skip_relocation
   end
 
-  sig { params(tag: T.any(Symbol, Utils::Bottles::Tag), no_older_versions: T::Boolean).returns(T::Boolean) }
+  sig { params(tag: Utils::Bottles::Tag, no_older_versions: T::Boolean).returns(T::Boolean) }
   def tag?(tag, no_older_versions: false)
     collector.tag?(tag, no_older_versions:)
   end
@@ -98,21 +108,26 @@ class BottleSpecification
   #  sha256 cellar: :any_skip_relocation, big_sur: "69489ae397e4645..."
   #  sha256 cellar: :any, catalina: "449de5ea35d0e94..."
   # end
+  sig { params(hash: T::Hash[T.any(Symbol, String), T.any(String, Symbol)]).void }
   def sha256(hash)
     sha256_regex = /^[a-f0-9]{64}$/i
 
     # find new `sha256 big_sur: "69489ae397e4645..."` format
     tag, digest = hash.find do |key, value|
+      # Don't use `odie` in this case. We want to be able to catch this exception
+      # in runtime when getting committed version info in formula auditor
+      raise LegacyDSLError.new(:sha256, hash) if key.is_a?(String) && key.match?(sha256_regex) && value.is_a?(Symbol)
+
       key.is_a?(Symbol) && value.is_a?(String) && value.match?(sha256_regex)
     end
 
-    cellar = hash[:cellar] if digest && tag
+    odie "Invalid sha256 hash: #{digest}" if !tag || !digest
 
-    tag = Utils::Bottles::Tag.from_symbol(tag)
+    tag = Utils::Bottles::Tag.from_symbol(T.cast(tag, Symbol))
 
-    cellar ||= tag.default_cellar
+    cellar = hash[:cellar] || tag.default_cellar
 
-    collector.add(tag, checksum: Checksum.new(digest), cellar:)
+    collector.add(tag, checksum: Checksum.new(digest.to_s), cellar:)
   end
 
   sig {
@@ -123,6 +138,7 @@ class BottleSpecification
     collector.specification_for(tag, no_older_versions:)
   end
 
+  sig { returns(T::Array[{ "tag" => Symbol, "digest" => Checksum, "cellar" => T.any(Symbol, String) }]) }
   def checksums
     tags = collector.tags.sort_by do |tag|
       version = tag.to_macos_version
@@ -136,6 +152,7 @@ class BottleSpecification
     end
     tags.reverse.map do |tag|
       spec = collector.specification_for(tag)
+      odie "Specification for tag #{tag} is nil" if spec.nil?
       {
         "tag"    => spec.tag.to_sym,
         "digest" => spec.checksum,

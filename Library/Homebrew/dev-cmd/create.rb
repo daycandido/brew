@@ -4,7 +4,6 @@
 require "formula"
 require "formula_creator"
 require "missing_formula"
-require "utils/pypi"
 require "cask/cask_loader"
 
 module Homebrew
@@ -16,7 +15,7 @@ module Homebrew
           and open it in the editor. Homebrew will attempt to automatically derive the
           formula name and version, but if it fails, you'll have to make your own template.
           The `wget` formula serves as a simple example. For the complete API, see:
-          <https://rubydoc.brew.sh/Formula>
+          <https://docs.brew.sh/rubydoc/Formula>
         EOS
         switch "--autotools",
                description: "Create a basic template for an Autotools-style build."
@@ -232,7 +231,12 @@ module Homebrew
           CoreTap.instance.clear_cache
           Formula[formula_creator.name]
         end
-        PyPI.update_python_resources! formula, ignore_non_pypi_packages: true if args.python?
+
+        if args.python?
+          Homebrew.install_bundler_gems!(groups: ["ast"])
+          require "utils/pypi"
+          PyPI.update_python_resources! formula, ignore_non_pypi_packages: true
+        end
 
         puts <<~EOS
           Please audit and test formula before submitting:

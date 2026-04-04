@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require_relative "../../cli/parser"
@@ -614,12 +615,12 @@ RSpec.describe Homebrew::CLI::Parser do
       expect(args.respond_to?(:formula?)).to be(false)
     end
 
-    it "sets --formula to true when defined" do
+    it "doesn't set --formula when defined" do
       parser = described_class.new(Cmd) do
         switch "--formula"
       end
       args = parser.parse([])
-      expect(args.formula?).to be(true)
+      expect(args.formula?).to be(false)
     end
 
     it "does not set --formula to true when --cask" do

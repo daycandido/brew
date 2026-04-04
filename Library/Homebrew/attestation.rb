@@ -81,11 +81,9 @@ module Homebrew
       # NOTE: We set HOMEBREW_NO_VERIFY_ATTESTATIONS when installing `gh` itself,
       #       to prevent a cycle during bootstrapping. This can eventually be resolved
       #       by vendoring a pure-Ruby Sigstore verifier client.
-      with_env(HOMEBREW_NO_VERIFY_ATTESTATIONS: "1") do
-        @gh_executable = ensure_executable!("gh", reason: "verifying attestations", latest: true)
+      @gh_executable = with_env(HOMEBREW_NO_VERIFY_ATTESTATIONS: "1") do
+        ensure_executable!("gh", reason: "verifying attestations", latest: true)
       end
-
-      T.must(@gh_executable)
     end
 
     # Prioritize installing `gh` first if it's in the formula list
@@ -98,8 +96,8 @@ module Homebrew
     # @api private
     sig { params(formulae: T::Array[Formula]).returns(T::Array[Formula]) }
     def self.sort_formulae_for_install(formulae)
-      if formulae.include?(Formula["gh"])
-        [Formula["gh"]] | formulae
+      if (gh = formulae.find { |f| f.full_name == "gh" })
+        [gh] | formulae
       else
         Homebrew::Attestation.gh_executable
         formulae
@@ -167,7 +165,7 @@ module Homebrew
       # in a single attestation, so we check every subject in each attestation
       # and select the first attestation with a matching subject.
       # In particular, this happens with v2.0.0 and later of the
-      # `actions/attest-build-provenance` action.
+      # `actions/attest` action.
       subject = bottle.filename.to_s if subject.blank?
 
       attestation = if bottle.tag.to_sym == :all
@@ -236,8 +234,10 @@ module Homebrew
         else
           # If our bottle is coming from a mirror, we need to recompute the expected
           # non-mirror URL to make the hash match.
+          checksum = bottle.resource.checksum
+          odie "#{bottle.resource.name} checksum is nil" if checksum.nil?
           path, = Utils::Bottles.path_resolved_basename HOMEBREW_BOTTLE_DEFAULT_DOMAIN, bottle.name,
-                                                        bottle.resource.checksum, bottle.filename
+                                                        checksum, bottle.filename
           url = "#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}/#{path}"
 
           Digest::SHA256.hexdigest(url)

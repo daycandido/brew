@@ -9,6 +9,15 @@ require "os/mac/xcode"
 module Homebrew
   module DevCmd
     class Unbottled < AbstractCommand
+      PORTABLE_FORMULAE = T.let(%w[
+        portable-libffi
+        portable-libxcrypt
+        portable-libyaml
+        portable-openssl
+        portable-ruby
+        portable-zlib
+      ].freeze, T::Array[String])
+
       cmd_args do
         description <<~EOS
           Show the unbottled dependents of formulae.
@@ -156,6 +165,10 @@ module Homebrew
         # Remove deprecated and disabled formulae as we do not care if they are unbottled
         formulae = Array(formulae).reject { |f| f.deprecated? || f.disabled? } if formulae.present?
         all_formulae = Array(all_formulae).reject { |f| f.deprecated? || f.disabled? } if all_formulae.present?
+
+        # Remove portable formulae as they are handled differently
+        formulae = formulae.reject { |f| PORTABLE_FORMULAE.include?(f.name) } if formulae.present?
+        all_formulae = all_formulae.reject { |f| PORTABLE_FORMULAE.include?(f.name) } if all_formulae.present?
 
         [T.let(formulae, T::Array[Formula]), T.let(all_formulae, T::Array[Formula]),
          T.let(formula_installs, T.nilable(T::Hash[Symbol, Integer]))]
@@ -311,7 +324,7 @@ module Homebrew
                 formula = nil
               when %r{^diff --git a/Formula/}
                 # Example match: `diff --git a/Formula/a/aws-cdk.rb b/Formula/a/aws-cdk.rb`
-                formula = line.split("/").last.chomp(".rb\n")
+                formula = line.split("/").fetch(-1).chomp(".rb\n")
                 formula = CoreTap.instance.formula_renames.fetch(formula, formula)
                 lost_bottles = 0
               when bottle_tag_sha_regex

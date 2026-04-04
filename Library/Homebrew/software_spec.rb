@@ -20,11 +20,6 @@ class SoftwareSpec
   extend Forwardable
   include OnSystem::MacOSAndLinux
 
-  PREDEFINED_OPTIONS = T.let({
-    universal: Option.new("universal", "Build a universal binary"),
-    cxx11:     Option.new("c++11",     "Build using C++11 mode"),
-  }.freeze, T::Hash[T.any(Symbol, String), Option])
-
   sig { returns(T.nilable(String)) }
   attr_reader :name
 
@@ -82,7 +77,7 @@ class SoftwareSpec
     @bottle_specification = T.let(BottleSpecification.new, BottleSpecification)
     @patches = T.let([], T::Array[T.any(EmbeddedPatch, ExternalPatch)])
     @options = T.let(Options.new, Options)
-    @flags = T.let(flags, T::Array[String])
+    @flags = flags
     @deprecated_flags = T.let([], T::Array[DeprecatedOption])
     @deprecated_options = T.let([], T::Array[DeprecatedOption])
     @build = T.let(BuildOptions.new(Options.create(@flags), options), BuildOptions)
@@ -202,24 +197,21 @@ class SoftwareSpec
     end
   end
 
-  sig { params(name: String).returns(T::Boolean) }
+  sig { params(name: T.any(Option, String)).returns(T::Boolean) }
   def option_defined?(name)
     options.include?(name)
   end
 
-  sig { params(name: T.any(Symbol, String), description: String).void }
+  sig { params(name: String, description: String).void }
   def option(name, description = "")
-    opt = PREDEFINED_OPTIONS.fetch(name) do
-      raise ArgumentError, "option name is required" if name.empty?
-      raise ArgumentError, "option name must be longer than one character: #{name}" if name.length <= 1
-      raise ArgumentError, "option name must not start with dashes: #{name}" if name.start_with?("-")
+    raise ArgumentError, "option name is required" if name.empty?
+    raise ArgumentError, "option name must be longer than one character: #{name}" if name.length <= 1
+    raise ArgumentError, "option name must not start with dashes: #{name}" if name.start_with?("-")
 
-      Option.new(name, description)
-    end
-    options << opt
+    options << Option.new(name, description)
   end
 
-  sig { params(hash: T::Hash[T.any(String, Symbol, T::Array[String]), T.any(String, Symbol, T::Array[String])]).void }
+  sig { params(hash: T::Hash[T.any(String, T::Array[String]), T.any(String, T::Array[String])]).void }
   def deprecated_option(hash)
     raise ArgumentError, "deprecated_option hash must not be empty" if hash.empty?
 
@@ -321,13 +313,6 @@ class SoftwareSpec
   sig { params(compiler: T.any(T::Hash[Symbol, String], Symbol), block: T.nilable(T.proc.bind(CompilerFailure).void)).void }
   def fails_with(compiler, &block)
     compiler_failures << CompilerFailure.create(compiler, &block)
-  end
-
-  sig { params(standards: T::Array[String]).void }
-  def needs(*standards)
-    standards.each do |standard|
-      compiler_failures.concat CompilerFailure.for_standard(standard)
-    end
   end
 
   sig { params(dep: Dependable).void }

@@ -38,7 +38,7 @@ module Language
       output = Utils.popen_read("npm", "pack", "--ignore-scripts")
       raise "npm failed to pack #{Dir.pwd}" if !$CHILD_STATUS.exitstatus.zero? || output.lines.empty?
 
-      output.lines.last.chomp
+      output.lines.fetch(-1).chomp
     end
 
     sig { void }
@@ -56,8 +56,8 @@ module Language
       end
     end
 
-    sig { params(libexec: Pathname).returns(T::Array[String]) }
-    def self.std_npm_install_args(libexec)
+    sig { params(libexec: Pathname, ignore_scripts: T::Boolean).returns(T::Array[String]) }
+    def self.std_npm_install_args(libexec, ignore_scripts: true)
       setup_npm_environment
 
       pack = pack_for_installation
@@ -66,29 +66,40 @@ module Language
       (libexec/"lib").mkpath
 
       # npm install args for global style module format installed into libexec
+      # Delay packages published in the last day so builds are less likely to
+      # install a freshly compromised npm release or dependency.
       args = %W[
-        -ddd
+        --loglevel=silly
         --global
         --build-from-source
+        --min-release-age=1
         --#{npm_cache_config}
         --prefix=#{libexec}
         #{Dir.pwd}/#{pack}
       ]
 
+      args << "--ignore-scripts" if ignore_scripts
       args << "--unsafe-perm" if Process.uid.zero?
 
       args
     end
 
-    sig { returns(T::Array[String]) }
-    def self.local_npm_install_args
+    sig { params(ignore_scripts: T::Boolean).returns(T::Array[String]) }
+    def self.local_npm_install_args(ignore_scripts: true)
       setup_npm_environment
       # npm install args for local style module format
-      %W[
-        -ddd
+      # Delay packages published in the last day so builds are less likely to
+      # install a freshly compromised npm release or dependency.
+      args = %W[
+        --loglevel=silly
         --build-from-source
+        --min-release-age=1
         --#{npm_cache_config}
       ]
+
+      args << "--ignore-scripts" if ignore_scripts
+
+      args
     end
 
     # Mixin module for {Formula} adding shebang rewrite features.

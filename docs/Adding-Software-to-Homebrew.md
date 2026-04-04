@@ -139,7 +139,7 @@ cask "fabfilter-one" do
     end
   end
 
-  depends_on macos: ">= :sierra"
+  depends_on macos: ">= :sonoma"
 
   pkg "FabFilter One #{version} Installer.pkg"
 
@@ -333,7 +333,7 @@ Examples of difficult, unclear commit summaries:
 Push your changes on the branch `my-new-cask-branch` to your GitHub account:
 
 ```bash
-git push {{my-github-username}} my-new-cask-branch
+git push $YOUR_GITHUB_USERNAME my-new-cask-branch
 ```
 
 If you are using [GitHub two-factor authentication](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa) and have set your remote repository as HTTPS you will need to [set up a personal access token](https://docs.github.com/en/repositories/creating-and-managing-repositories/troubleshooting-cloning-errors#provide-an-access-token) and use that instead of your password.
@@ -345,7 +345,7 @@ If you are using [GitHub two-factor authentication](https://docs.github.com/en/a
 The `git push` command prints a suggestion for how to create a pull request:
 
     remote: Create a pull request for 'new-cask-cask' on GitHub by visiting:
-    remote:      https://github.com/{{my-github-username}}/homebrew-cask/pull/new/my-new-cask-branch
+    remote:      https://github.com/$YOUR_GITHUB_USERNAME/homebrew-cask/pull/new/my-new-cask-branch
 
 ##### b) use suggestion from GitHub's website
 
@@ -353,7 +353,7 @@ Now go to the [`homebrew-cask` GitHub repository](https://github.com/Homebrew/ho
 
 ##### c) manually create a pull request on GitHub
 
-Otherwise, click the `Contribute > Open pull request` button and choose to `compare across forks`. The base fork should be `Homebrew/homebrew-cask @ main`, and the head fork should be `my-github-username/homebrew-cask @ my-new-cask-branch`. You can also add any further comments to your pull request at this stage.
+Otherwise, click the `Contribute > Open pull request` button and choose to `compare across forks`. The base fork should be `Homebrew/homebrew-cask @ main`, and the head fork should be `$YOUR_GITHUB_USERNAME/homebrew-cask @ my-new-cask-branch`. You can also add any further comments to your pull request at this stage.
 
 #### Congratulations
 

@@ -4,6 +4,7 @@
 require "shellwords"
 require "source_location"
 require "system_command"
+require "tap"
 require "utils/output"
 
 module Homebrew
@@ -40,6 +41,7 @@ module Homebrew
 
     def self.check_style_impl(files, output_type,
                               fix: false,
+                              todo: false,
                               except_cops: nil, only_cops: nil,
                               display_cop_names: false,
                               reset_cache: false,
@@ -49,7 +51,7 @@ module Homebrew
       ruby_files = T.let([], T::Array[Pathname])
       shell_files = T.let([], T::Array[Pathname])
       actionlint_files = T.let([], T::Array[Pathname])
-      Array(files).map { Pathname(_1) }
+      Array(files).map { Pathname(it) }
                   .each do |path|
         case path.extname
         when ".rb"
@@ -75,6 +77,7 @@ module Homebrew
       else
         run_rubocop(ruby_files, output_type,
                     fix:,
+                    todo:,
                     except_cops:, only_cops:,
                     display_cop_names:,
                     reset_cache:,
@@ -108,7 +111,8 @@ module Homebrew
     RUBOCOP = (HOMEBREW_LIBRARY_PATH/"utils/rubocop.rb").freeze
 
     def self.run_rubocop(files, output_type,
-                         fix: false, except_cops: nil, only_cops: nil, display_cop_names: false, reset_cache: false,
+                         fix: false, todo: false, except_cops: nil, only_cops: nil, display_cop_names: false,
+                         reset_cache: false,
                          debug: false, verbose: false)
       require "warnings"
 
@@ -121,11 +125,8 @@ module Homebrew
       args = %w[
         --force-exclusion
       ]
-      args << if fix
-        "--autocorrect-all"
-      else
-        "--parallel"
-      end
+      args << "--autocorrect-all" if fix
+      args << "--disable-uncorrectable" if todo
 
       args += ["--extra-details"] if verbose
 
@@ -163,13 +164,21 @@ module Homebrew
         base_dir = HOMEBREW_LIBRARY if files.any? { |f| f.to_s.start_with? HOMEBREW_LIBRARY }
       end
 
-      args += files
-
       HOMEBREW_CACHE.mkpath
-      cache_dir = HOMEBREW_CACHE.realpath
-      cache_env = { "XDG_CACHE_HOME" => "#{cache_dir}/style" }
+      cache_dir = HOMEBREW_CACHE.realpath/"style"
+      cache_env = if (!cache_dir.exist? && cache_dir.parent.writable?) || cache_dir.writable?
+        args << "--parallel" unless fix
 
-      FileUtils.rm_rf cache_env["XDG_CACHE_HOME"] if reset_cache
+        FileUtils.rm_rf cache_dir if reset_cache
+
+        { "XDG_CACHE_HOME" => cache_dir.to_s }
+      else
+        args << "--cache" << "false"
+
+        {}
+      end
+
+      args += files
 
       ruby_args = HOMEBREW_RUBY_EXEC_ARGS.dup
       case output_type
@@ -281,9 +290,24 @@ module Homebrew
 
     def self.run_actionlint!(files)
       files = github_workflow_files if files.blank?
+
+      tap_configs = files.filter_map do |f|
+        tap = Tap.from_path(f)
+        next unless tap
+
+        tap_config = tap.path/".github/actionlint.yaml"
+        tap_config if tap_config.exist?
+      end.uniq
+
+      config_file = if tap_configs.one?
+        tap_configs.first
+      else
+        HOMEBREW_REPOSITORY/".github/actionlint.yaml"
+      end
+
       # the ignore is to avoid false positives in e.g. actions, homebrew-test-bot
       system actionlint, "-shellcheck", shellcheck,
-             "-config-file", HOMEBREW_REPOSITORY/".github/actionlint.yaml",
+             "-config-file", config_file,
              "-ignore", "image: string; options: string",
              "-ignore", "label .* is unknown",
              *files

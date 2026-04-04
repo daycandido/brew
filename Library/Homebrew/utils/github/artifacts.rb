@@ -23,15 +23,15 @@ module GitHub
 end
 
 # Strategy for downloading an artifact from GitHub Actions.
-class GitHubArtifactDownloadStrategy < AbstractFileDownloadStrategy
+class GitHubArtifactDownloadStrategy < AbstractFileDownloadStrategy # rubocop:todo Style/OneClassPerFile
   sig { params(url: String, artifact_id: String, token: String).void }
   def initialize(url, artifact_id, token:)
     super(url, "artifact", artifact_id)
     @cache = T.let(HOMEBREW_CACHE/"gh-actions-artifact", Pathname)
-    @token = T.let(token, String)
+    @token = token
   end
 
-  sig { override.params(timeout: T.any(Float, Integer, NilClass)).void }
+  sig { override.params(timeout: T.nilable(T.any(Float, Integer))).void }
   def fetch(timeout: nil)
     ohai "Downloading #{url}"
     if cached_location.exist?

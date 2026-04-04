@@ -21,8 +21,6 @@ module Homebrew
 
       return if @general.present?
       raise UsageError, "`--version` must not be empty." if arm.blank? && intel.blank?
-      raise UsageError, "`--version-arm` must not be empty." if arm.blank?
-      raise UsageError, "`--version-intel` must not be empty." if intel.blank?
     end
 
     sig {
@@ -34,6 +32,10 @@ module Homebrew
         version
       elsif version.is_a?(String)
         parse_cask_version(version)
+      else
+        # :nocov:
+        T.absurd(version)
+        # :nocov:
       end
     end
 
@@ -51,11 +53,14 @@ module Homebrew
       @general.blank? && @arm.blank? && @intel.blank?
     end
 
-    sig { params(other: T.untyped).returns(T::Boolean) }
+    sig { params(other: T.anything).returns(T::Boolean) }
     def ==(other)
-      return false unless other.is_a?(BumpVersionParser)
-
-      (general == other.general) && (arm == other.arm) && (intel == other.intel)
+      case other
+      when BumpVersionParser
+        (general == other.general) && (arm == other.arm) && (intel == other.intel)
+      else
+        false
+      end
     end
   end
 end

@@ -5,7 +5,10 @@ require "api/analytics"
 require "api/cask"
 require "api/formula"
 require "api/internal"
+require "api/formula_struct"
+require "api/cask_struct"
 require "base64"
+require "download_queue"
 require "utils/output"
 
 module Homebrew
@@ -17,7 +20,7 @@ module Homebrew
 
     HOMEBREW_CACHE_API = T.let((HOMEBREW_CACHE/"api").freeze, Pathname)
     HOMEBREW_CACHE_API_SOURCE = T.let((HOMEBREW_CACHE/"api-source").freeze, Pathname)
-    DEFAULT_API_STALE_SECONDS = T.let(86400, Integer) # 1 day
+    DEFAULT_API_STALE_SECONDS = T.let(7 * 24 * 60 * 60, Integer) # 7 days
 
     sig { params(endpoint: String).returns(T::Hash[String, T.untyped]) }
     def self.fetch(endpoint)
@@ -51,11 +54,13 @@ module Homebrew
         endpoint:       String,
         target:         Pathname,
         stale_seconds:  T.nilable(Integer),
-        download_queue: T.nilable(DownloadQueue),
+        download_queue: DownloadQueue,
+        enqueue:        T::Boolean,
       ).returns([T.any(T::Array[T.untyped], T::Hash[String, T.untyped]), T::Boolean])
     }
     def self.fetch_json_api_file(endpoint, target: HOMEBREW_CACHE_API/endpoint,
-                                 stale_seconds: nil, download_queue: nil)
+                                 stale_seconds: nil, download_queue: Homebrew.default_download_queue,
+                                 enqueue: false)
       # Lazy-load dependency.
       require "development_tools"
 
@@ -78,7 +83,7 @@ module Homebrew
                           DevelopmentTools.curl_substitution_required?
       skip_download = skip_download?(target:, stale_seconds:)
 
-      if download_queue
+      if enqueue
         unless skip_download
           require "api/json_download"
           download = Homebrew::API::JSONDownload.new(endpoint, target:, stale_seconds:)
@@ -165,10 +170,7 @@ module Homebrew
 
     sig { void }
     def self.fetch_api_files!
-      download_queue = if Homebrew::EnvConfig.download_concurrency > 1
-        require "download_queue"
-        Homebrew::DownloadQueue.new
-      end
+      download_queue = Homebrew::DownloadQueue.new
 
       stale_seconds = if ENV["HOMEBREW_API_UPDATED"].present? ||
                          (Homebrew::EnvConfig.no_auto_update? && !Homebrew::EnvConfig.force_api_auto_update?)
@@ -180,18 +182,18 @@ module Homebrew
       end
 
       if Homebrew::EnvConfig.use_internal_api?
-        Homebrew::API::Internal.fetch_formula_api!(download_queue:, stale_seconds:)
-        Homebrew::API::Internal.fetch_cask_api!(download_queue:, stale_seconds:)
+        Homebrew::API::Internal.fetch_formula_api!(download_queue:, stale_seconds:, enqueue: true)
+        Homebrew::API::Internal.fetch_cask_api!(download_queue:, stale_seconds:, enqueue: true)
       else
-        Homebrew::API::Formula.fetch_api!(download_queue:, stale_seconds:)
-        Homebrew::API::Formula.fetch_tap_migrations!(download_queue:, stale_seconds: DEFAULT_API_STALE_SECONDS)
-        Homebrew::API::Cask.fetch_api!(download_queue:, stale_seconds:)
-        Homebrew::API::Cask.fetch_tap_migrations!(download_queue:, stale_seconds: DEFAULT_API_STALE_SECONDS)
+        Homebrew::API::Formula.fetch_api!(download_queue:, stale_seconds:, enqueue: true)
+        Homebrew::API::Formula.fetch_tap_migrations!(download_queue:, stale_seconds: DEFAULT_API_STALE_SECONDS,
+                                                     enqueue: true)
+        Homebrew::API::Cask.fetch_api!(download_queue:, stale_seconds:, enqueue: true)
+        Homebrew::API::Cask.fetch_tap_migrations!(download_queue:, stale_seconds: DEFAULT_API_STALE_SECONDS,
+                                                  enqueue: true)
       end
 
       ENV["HOMEBREW_API_UPDATED"] = "1"
-
-      return unless download_queue
 
       begin
         download_queue.fetch
@@ -216,7 +218,7 @@ module Homebrew
       names_path = HOMEBREW_CACHE_API/"#{type}_names.txt"
       if !names_path.exist? || regenerate
         names_path.unlink if names_path.exist?
-        names_path.write(names.join("\n"))
+        names_path.write(names.sort.join("\n"))
         return true
       end
 
@@ -231,7 +233,7 @@ module Homebrew
           "#{alias_name}|#{real_name}"
         end
         aliases_path.unlink if aliases_path.exist?
-        aliases_path.write(aliases_text.join("\n"))
+        aliases_path.write(aliases_text.sort.join("\n"))
         return true
       end
 
@@ -282,7 +284,7 @@ module Homebrew
     sig { returns(T::Array[String]) }
     def self.formula_names
       if Homebrew::EnvConfig.use_internal_api?
-        Homebrew::API::Internal.formula_arrays.keys
+        Homebrew::API::Internal.formula_hashes.keys
       else
         Homebrew::API::Formula.all_formulae.keys
       end
@@ -361,14 +363,19 @@ module Homebrew
     end
   end
 
-  sig { params(block: T.proc.returns(T.untyped)).returns(T.untyped) }
+  sig { type_parameters(:U).params(block: T.proc.returns(T.type_parameter(:U))).returns(T.type_parameter(:U)) }
   def self.with_no_api_env(&block)
     return yield if Homebrew::EnvConfig.no_install_from_api?
 
     with_env(HOMEBREW_NO_INSTALL_FROM_API: "1", HOMEBREW_AUTOMATICALLY_SET_NO_INSTALL_FROM_API: "1", &block)
   end
 
-  sig { params(condition: T::Boolean, block: T.proc.returns(T.untyped)).returns(T.untyped) }
+  sig {
+    type_parameters(:U).params(
+      condition: T::Boolean,
+      block:     T.proc.returns(T.type_parameter(:U)),
+    ).returns(T.type_parameter(:U))
+  }
   def self.with_no_api_env_if_needed(condition, &block)
     return yield unless condition
 

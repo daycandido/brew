@@ -84,6 +84,7 @@ module Homebrew
               info += "\nbranch: #{tap.git_branch || "(none)"}" if default_branches.exclude?(tap.git_branch)
             else
               info += "Not installed"
+              Homebrew.failed = true
             end
             puts info
           end
