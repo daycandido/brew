@@ -125,7 +125,7 @@ module Homebrew
           @kept_formulae ||= begin
             @dsl ||= Brewfile.read(global:, file:)
 
-            kept_formulae = @dsl.entries.select { |e| e.type == :brew }.map(&:name)
+            kept_formulae = @dsl.entries.filter_map { |e| e.name if e.type == :brew }
             kept_formulae += Homebrew::Bundle::CaskDumper.formula_dependencies(kept_casks)
             kept_formulae.map! do |f|
               Homebrew::Bundle::FormulaDumper.formula_aliases.fetch(
@@ -184,7 +184,7 @@ module Homebrew
 
           @dsl ||= Brewfile.read(global:, file:)
           kept_formulae = self.kept_formulae(global:, file:).filter_map { lookup_formula(_1) }
-          kept_taps = @dsl.entries.select { |e| e.type == :tap }.map(&:name)
+          kept_taps = @dsl.entries.filter_map { |e| e.name if e.type == :tap }
           kept_taps += kept_formulae.filter_map(&:tap).map(&:name)
           current_taps = Homebrew::Bundle::TapDumper.tap_names
           current_taps - kept_taps - IGNORED_TAPS
@@ -200,7 +200,7 @@ module Homebrew
         def self.vscode_extensions_to_uninstall(global: false, file: nil)
           require "bundle/brewfile"
           @dsl ||= Brewfile.read(global:, file:)
-          kept_extensions = @dsl.entries.select { |e| e.type == :vscode }.map { |x| x.name.downcase }
+          kept_extensions = @dsl.entries.filter_map { |e| e.name.downcase if e.type == :vscode }
 
           # To provide a graceful migration from `Brewfile`s that don't yet or
           # don't want to use `vscode`: don't remove any extensions if we don't
