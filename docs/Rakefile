@@ -42,6 +42,8 @@ task test: :build do
       /Kickstarter-Supporters/,
     ],
     ignore_urls:         [
+      %r{https://docs.brew.sh/Deprecating-Disabling-and-Removing-Formulae},
+      %r{https://docs.brew.sh/Deprecating-Disabling-and-Removing-Casks},
       "/",
       %r{/rubydoc/},
       %r{https://github.com/},
