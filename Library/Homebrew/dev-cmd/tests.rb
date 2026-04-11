@@ -179,7 +179,9 @@ module Homebrew
           end
           success = $CHILD_STATUS.success?
 
-          safe_system "stackprof --d3-flamegraph #{prof_input_filename} > #{prof_filename}" if args.stackprof?
+          if args.stackprof?
+            safe_system "stackprof", "--d3-flamegraph", T.must(prof_input_filename), out: T.must(prof_filename)
+          end
 
           exec_browser prof_filename if prof_filename
 
