@@ -27,7 +27,7 @@ Formulae should only be deprecated if at least one of the following are true:
 - the formula does not build on any supported OS versions
 - the software installed by the formula has outstanding CVEs
 - the software installed by the formula has been discontinued or abandoned upstream
-- the formula has [zero installs in the last 90 days](https://formulae.brew.sh/analytics/install/90d/)
+- the formula has [zero installs in the last 90 days](https://formulae.brew.sh/analytics/install/homebrew-core/90d/)
 
 Formulae with dependents should not be deprecated unless all dependents are also deprecated.
 
@@ -59,9 +59,9 @@ The most common reasons for disabling a formula are:
 - it has been deprecated for a long time
 - the project has no license
 
-Popular formulae (e.g. have more than 1000 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/install/90d/)) should not be disabled without a deprecation period of at least six months even if e.g. they do not build from source and do not have a license.
+Popular formulae (e.g. have more than 1000 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/install/homebrew-core/90d/)) should not be disabled without a deprecation period of at least six months even if e.g. they do not build from source and do not have a license.
 
-Unpopular formulae (e.g. have fewer than 1000 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/install/90d/)) can be disabled immediately for any of the reasons above, e.g. they cannot be built from source on any supported macOS version or Linux.
+Unpopular formulae (e.g. have fewer than 1000 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/install/homebrew-core/90d/)) can be disabled immediately for any of the reasons above, e.g. they cannot be built from source on any supported macOS version or Linux.
 They can be manually removed three months after their disable date.
 
 To disable a formula, add a `disable!` call. This call should include a deprecation date in the ISO 8601 format and a deprecation reason:
@@ -90,7 +90,7 @@ A formula should be removed if it does not meet our criteria for [acceptable for
 
 When a formula is deprecated or disabled, a reason explaining the action must be provided.
 
-There are two ways to indicate the reason. The preferred way is to use a pre-existing symbol to indicate the reason. The available symbols are listed below and can be found in the [`DeprecateDisable` module](/rubydoc/DeprecateDisable.html.html):
+There are two ways to indicate the reason. The preferred way is to use a pre-existing symbol to indicate the reason. The available symbols are listed below and can be found in the [`DeprecateDisable` module](/rubydoc/DeprecateDisable.html):
 
 - `:does_not_build`: the formula cannot be built from source on any supported macOS version or Linux.
 - `:no_license`: we cannot identify a license for the formula

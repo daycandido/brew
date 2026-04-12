@@ -29,7 +29,7 @@ Casks should only be deprecated if at least one of the following are true:
 - the software installed by the cask cannot be run on any supported OS versions
 - the software installed by the cask has outstanding CVEs
 - the software installed by the cask has been discontinued or abandoned upstream
-- the cask has [zero installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/90d/)
+- the cask has [zero installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/homebrew-cask/90d/)
 
 To deprecate a cask, add a `deprecate!` call. This call should include a deprecation date in the ISO 8601 format and a deprecation reason:
 
@@ -59,9 +59,9 @@ The most common reasons for disabling a cask are:
 - it has been deprecated for a long time
 - the upstream URL has been removed
 
-Popular casks (e.g. have more than 300 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/90d/)) should not be disabled without a deprecation period of at least six months unless they cannot be installed on any supported OS versions and the issue is unfixable (e.g. download URL no longer works and a mirror cannot be sourced).
+Popular casks (e.g. have more than 300 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/homebrew-cask/90d/)) should not be disabled without a deprecation period of at least six months unless they cannot be installed on any supported OS versions and the issue is unfixable (e.g. download URL no longer works and a mirror cannot be sourced).
 
-Unpopular casks (e.g. have fewer than 300 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/90d/)) can be disabled immediately for any of the reasons above, e.g. the upstream URL has been removed.
+Unpopular casks (e.g. have fewer than 300 [analytics installs in the last 90 days](https://formulae.brew.sh/analytics/cask-install/homebrew-cask/90d/)) can be disabled immediately for any of the reasons above, e.g. the upstream URL has been removed.
 They can be manually removed three months after their disable date.
 
 To disable a cask, add a `disable!` call. This call should include a deprecation date in the ISO 8601 format and a deprecation reason:
@@ -90,7 +90,7 @@ A cask should be removed if it does not meet our criteria for [acceptable casks]
 
 When a cask is deprecated or disabled, a reason explaining the action must be provided.
 
-There are two ways to indicate the reason. The preferred way is to use a pre-existing symbol to indicate the reason. The available symbols are listed below and can be found in the [`DeprecateDisable` module](/rubydoc/DeprecateDisable.html.html):
+There are two ways to indicate the reason. The preferred way is to use a pre-existing symbol to indicate the reason. The available symbols are listed below and can be found in the [`DeprecateDisable` module](/rubydoc/DeprecateDisable.html):
 
 - `:discontinued`: the cask is discontinued upstream
 - `:moved_to_mas`: the cask is now exclusively distributed on the Mac App Store
