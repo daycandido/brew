@@ -1,3 +1,7 @@
+---
+last_review_date: "2024-05-24"
+---
+
 # Command Not Found
 
 This feature reproduces Ubuntu's `command-not-found` for Homebrew users on macOS.
