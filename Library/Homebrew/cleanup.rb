@@ -479,7 +479,10 @@ module Homebrew
 
       downloads = (cache/"downloads").children
 
-      referenced_downloads = cache_files.map { |file| file[:path] }.select(&:symlink?).map(&:resolved_path)
+      referenced_downloads = cache_files.filter_map do |file|
+        path = file[:path]
+        path.resolved_path if path.symlink?
+      end
 
       (downloads - referenced_downloads).each do |download|
         if self.class.incomplete?(download)
