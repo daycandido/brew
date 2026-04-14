@@ -344,7 +344,9 @@ module Homebrew
       def formula_upgrade_descriptions(formulae)
         formulae.map do |formula|
           if formula.optlinked?
-            "#{formula.full_specified_name} #{Keg.new(formula.opt_prefix).version} -> #{formula.pkg_version}"
+            "#{formula.full_specified_name} " \
+              "#{Tty.red}#{Keg.new(formula.opt_prefix).version}#{Tty.reset} -> " \
+              "#{Tty.green}#{formula.pkg_version}#{Tty.reset}"
           else
             "#{formula.full_specified_name} #{formula.pkg_version}"
           end
@@ -474,7 +476,10 @@ module Homebrew
         Install.enqueue_cask_installers(fetchable_cask_installers)
         prefetch_names&.replace(cask_names)
         prefetch_upgrades&.replace(
-          outdated_casks.map { |cask| "#{cask.full_name} #{cask.installed_version} -> #{cask.version}" },
+          outdated_casks.map do |cask|
+            "#{cask.full_name} #{Tty.red}#{cask.installed_version}#{Tty.reset} -> " \
+              "#{Tty.green}#{cask.version}#{Tty.reset}"
+          end,
         )
         Install.show_combined_fetch_downloads_heading(cask_names:) if show_downloads_heading
 
