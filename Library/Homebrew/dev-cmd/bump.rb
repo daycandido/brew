@@ -623,7 +623,7 @@ module Homebrew
           elsif rv.newer_than_upstream
             "#{Tty.red}#{rv.current_version}#{Tty.reset} -> #{rv.latest_version}#{NEWER_THAN_UPSTREAM_MSG}"
           elsif rv.outdated
-            "#{rv.current_version} -> #{Tty.green}#{rv.latest_version}#{Tty.reset}"
+            "#{Tty.red}#{rv.current_version}#{Tty.reset} -> #{Tty.green}#{rv.latest_version}#{Tty.reset}"
           else
             "#{rv.current_version} -> #{rv.latest_version}"
           end
