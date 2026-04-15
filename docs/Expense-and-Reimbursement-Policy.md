@@ -1,3 +1,7 @@
+---
+last_review_date: 2025-05-15
+---
+
 # Expense and Reimbursement Policy
 
 This document presents _guidelines_ for spending money on behalf of Homebrew and seeking reimbursement for expenses incurred while doing work to benefit Homebrew, such as paying for goods or services or traveling to conferences or the Annual General Meeting.
