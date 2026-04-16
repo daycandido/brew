@@ -150,7 +150,8 @@ module Cask
       return false if upgradable_casks.empty?
 
       cask_upgrades = upgradable_casks.map do |(old_cask, new_cask)|
-        "#{new_cask.full_name} #{old_cask.version} -> #{new_cask.version}"
+        "#{new_cask.full_name} #{Tty.red}#{old_cask.version}#{Tty.reset} " \
+          "-> #{Tty.green}#{new_cask.version}#{Tty.reset}"
       end
 
       created_download_queue = T.let(false, T::Boolean)
@@ -267,7 +268,7 @@ module Cask
 
       begin
         oh1 "Upgrading #{Formatter.identifier(old_cask)}"
-        puts "  #{old_cask.version} -> #{new_cask.version}"
+        puts "  #{Tty.red}#{old_cask.version}#{Tty.reset} -> #{Tty.green}#{new_cask.version}#{Tty.reset}"
 
         # Start new cask's installation steps
         new_cask_installer.check_conflicts
