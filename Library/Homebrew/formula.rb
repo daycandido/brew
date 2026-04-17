@@ -4771,7 +4771,7 @@ class Formula
     # ```
     # TODO: replace legacy `replacement` with `replacement_formula` or `replacement_cask`
     #
-    # @see https://docs.brew.sh/Deprecating-Disabling-and-Removing-Formulae
+    # @see https://docs.brew.sh/Deprecating,-Disabling-and-Removing-Formulae
     # @see DeprecateDisable::FORMULA_DEPRECATE_DISABLE_REASONS
     # @api public
     sig {
@@ -4881,7 +4881,7 @@ class Formula
     # ```
     #  TODO: replace legacy `replacement` with `replacement_formula` or `replacement_cask`
     #
-    # @see https://docs.brew.sh/Deprecating-Disabling-and-Removing-Formulae
+    # @see https://docs.brew.sh/Deprecating,-Disabling-and-Removing-Formulae
     # @see DeprecateDisable::FORMULA_DEPRECATE_DISABLE_REASONS
     # @api public
     sig {
