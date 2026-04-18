@@ -26,7 +26,7 @@ module Utils
     # Path to launchctl binary.
     sig { returns(T.nilable(Pathname)) }
     def self.launchctl
-      return @launchctl if defined? @launchctl
+      return @launchctl if defined?(@launchctl)
       return if ENV["HOMEBREW_TEST_GENERIC_OS"]
 
       @launchctl = T.let(which("launchctl"), T.nilable(Pathname))
@@ -35,7 +35,7 @@ module Utils
     # Path to systemctl binary.
     sig { returns(T.nilable(Pathname)) }
     def self.systemctl
-      return @systemctl if defined? @systemctl
+      return @systemctl if defined?(@systemctl)
       return if ENV["HOMEBREW_TEST_GENERIC_OS"]
 
       @systemctl = T.let(which("systemctl"), T.nilable(Pathname))
