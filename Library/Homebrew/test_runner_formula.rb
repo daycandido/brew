@@ -100,8 +100,11 @@ class TestRunnerFormula
 
         Homebrew::SimulateSystem.with(os:, arch:) do
           Formula.public_send(formula_selector)
-                 .select { |candidate_f| candidate_f.deps.map(&:name).include?(name) }
-                 .map { |f| TestRunnerFormula.new(f, eval_all:) }
+                 .filter_map do |candidate_f|
+                   next unless candidate_f.deps.any? { |dep| dep.name == name }
+
+                   TestRunnerFormula.new(candidate_f, eval_all:)
+                 end
                  .freeze
         end
       end

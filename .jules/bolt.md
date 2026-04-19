@@ -1,0 +1,3 @@
+## 2024-05-30 - Optimize intermediate array allocations
+**Learning:** Chaining `.select` and `.map` creates intermediate arrays which increases garbage collection pressure and memory usage. Additionally, `.map(&:property).include?(value)` evaluates the entire collection and allocates an array just to perform an inclusion check, which is significantly slower than using `.any? { |item| item.property == value }` which short-circuits.
+**Action:** Prefer `.filter_map` over `.select.map` to avoid intermediate array allocations. Use `.any?` rather than `.map.include?` when simply checking for the presence of an element with a specific property to benefit from early returns and zero intermediate allocations.

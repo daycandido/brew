@@ -22,7 +22,7 @@ module Homebrew
       ) do |_, dependency|
         Dependency.prune if dependency.build? || dependency.test?
       end
-      next unless recursive_runtime_dependencies.map(&:name).include? "gcc"
+      next unless recursive_runtime_dependencies.any? { |dep| dep.name == "gcc" }
 
       keg = formula.installed_kegs.fetch(-1)
       tab = keg.tab
