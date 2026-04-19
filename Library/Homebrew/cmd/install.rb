@@ -323,7 +323,10 @@ module Homebrew
           download_queue = Homebrew::DownloadQueue.new(pour: true)
           begin
             Cask::Upgrade.show_upgrade_summary(
-              upgrade_casks.map { |cask| "#{cask.full_name} #{cask.installed_version} -> #{cask.version}" },
+              upgrade_casks.map do |cask|
+                "#{cask.full_name} #{Tty.red}#{cask.installed_version}#{Tty.reset} " \
+                  "-> #{Tty.green}#{cask.version}#{Tty.reset}"
+              end,
             )
             Install.show_combined_fetch_downloads_heading(
               formula_names: formulae_installer.map { |fi| fi.formula.name },
