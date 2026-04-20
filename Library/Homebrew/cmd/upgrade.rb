@@ -238,7 +238,8 @@ module Homebrew
 
           unless Homebrew::EnvConfig.developer?
             opoo "building from source is not supported!"
-            puts "You're on your own. Failures are expected so don't create any issues, please!"
+            puts "#{Tty.bold}You're on your own. Failures are expected so " \
+                 "don't create any issues, please!#{Tty.reset}"
           end
         end
 
