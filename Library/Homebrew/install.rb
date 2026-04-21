@@ -449,7 +449,7 @@ module Homebrew
 
         if dry_run
           ohai "Would install #{Utils.pluralize("formula", formulae_names_to_install.count, include_count: true)}:"
-          puts formulae_names_to_install.join(" ")
+          puts formulae_names_to_install.map { |f| Formatter.identifier(f) }.join(" ")
 
           formula_installers.each do |fi|
             print_dry_run_dependencies(fi.formula, fi.compute_dependencies, &:name)
@@ -477,7 +477,7 @@ module Homebrew
 
         ohai "Would install #{Utils.pluralize("dependency", dependencies.count, include_count: true)} " \
              "for #{formula.name}:"
-        formula_names = dependencies.map { |dep| yield dep.to_formula }
+        formula_names = dependencies.map { |dep| Formatter.identifier(yield dep.to_formula) }
         puts formula_names.join(" ")
       end
 

@@ -209,7 +209,7 @@ module Homebrew
           if args.dry_run?
             if (casks_to_install = casks.reject(&:installed?).presence)
               ohai "Would install #{::Utils.pluralize("cask", casks_to_install.count, include_count: true)}:"
-              puts casks_to_install.map(&:full_name).join(" ")
+              puts casks_to_install.map { |c| Formatter.identifier(c.full_name) }.join(" ")
             end
             casks.each do |cask|
               dep_names = CaskDependent.new(cask)
@@ -220,7 +220,7 @@ module Homebrew
 
               ohai "Would install #{::Utils.pluralize("dependency", dep_names.count, include_count: true)} " \
                    "for #{cask.full_name}:"
-              puts dep_names.join(" ")
+              puts dep_names.map { |d| Formatter.identifier(d) }.join(" ")
             end
             return
           end
@@ -477,8 +477,8 @@ module Homebrew
           first_formula = all_formulae.first.to_s
           puts <<~EOS
 
-            To install #{first_formula}, run:
-              brew install #{first_formula}
+            To install #{Formatter.identifier(first_formula)}, run:
+              #{Formatter.identifier("brew install #{first_formula}")}
           EOS
         end
         puts if all_formulae.any? && all_casks.any?
@@ -487,8 +487,8 @@ module Homebrew
           first_cask = all_casks.first.to_s
           puts <<~EOS
 
-            To install #{first_cask}, run:
-              brew install --cask #{first_cask}
+            To install #{Formatter.identifier(first_cask)}, run:
+              #{Formatter.identifier("brew install --cask #{first_cask}")}
           EOS
         end
         return if all_formulae.any? || all_casks.any?
