@@ -477,7 +477,7 @@ module Homebrew
 
         ohai "Would install #{Utils.pluralize("dependency", dependencies.count, include_count: true)} " \
              "for #{formula.name}:"
-        formula_names = dependencies.map { |dep| Formatter.identifier(yield dep.to_formula) }
+        formula_names = dependencies.map { |dep| Formatter.identifier(yield(dep.to_formula)) }
         puts formula_names.join(" ")
       end
 
