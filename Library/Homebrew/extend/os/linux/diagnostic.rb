@@ -214,7 +214,7 @@ module OS
             next false unless formula.tap&.core_tap?
 
             # FIXME: This includes formulae that have no runtime dependency on GCC.
-            formula.recursive_dependencies.map(&:name).include? "gcc"
+            formula.recursive_dependencies.any? { |dep| dep.name == "gcc" }
           rescue TapFormulaUnavailableError
             false
           end
