@@ -107,7 +107,7 @@ RSpec.describe Homebrew::Cmd::UpgradeCmd do
       if prefetch_only
         expect(show_upgrade_summary).to be(false)
         prefetch_names&.replace(["deno"])
-        prefetch_upgrades&.replace(["deno 2.7.10 -> 2.7.11"])
+        prefetch_upgrades&.replace(["deno #{Tty.red}2.7.10#{Tty.reset} -> #{Tty.green}2.7.11#{Tty.reset}"])
       end
 
       true
@@ -126,8 +126,8 @@ RSpec.describe Homebrew::Cmd::UpgradeCmd do
 
     expect { cmd.run }.to output(<<~EOS).to_stdout
       ==> Upgrading 2 outdated packages:
-      deno 2.7.10 -> 2.7.11
-      codex 0.117.0 -> 0.118.0
+      deno #{Tty.red}2.7.10#{Tty.reset} -> #{Tty.green}2.7.11#{Tty.reset}
+      codex #{Tty.red}0.117.0#{Tty.reset} -> #{Tty.green}0.118.0#{Tty.reset}
       ==> Fetching downloads for: deno and codex
     EOS
   end
