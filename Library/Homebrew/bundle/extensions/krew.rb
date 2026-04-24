@@ -21,7 +21,9 @@ module Homebrew
 
         sig { override.returns(T.nilable(Pathname)) }
         def package_manager_executable
-          @package_manager_executable ||= T.let(which("kubectl", ORIGINAL_PATHS), T.nilable(Pathname))
+          return @package_manager_executable if defined?(@package_manager_executable)
+
+          @package_manager_executable = T.let(which("kubectl", ORIGINAL_PATHS), T.nilable(Pathname))
         end
 
         sig { override.returns(T::Boolean) }

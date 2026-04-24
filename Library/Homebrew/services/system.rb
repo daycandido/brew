@@ -15,7 +15,9 @@ module Homebrew
       # Path to launchctl binary.
       sig { returns(T.nilable(Pathname)) }
       def self.launchctl
-        @launchctl ||= T.let(which("launchctl"), T.nilable(Pathname))
+        return @launchctl if defined?(@launchctl)
+
+        @launchctl = T.let(which("launchctl"), T.nilable(Pathname))
       end
 
       # Is this a launchctl system
