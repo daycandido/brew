@@ -282,7 +282,7 @@ module Homebrew
           else
             opoo message
           end
-          puts pinned.map { |f| "#{f.full_specified_name} #{f.pkg_version}" } * ", "
+          puts pinned.map { |f| Formatter.identifier("#{f.full_specified_name} #{f.pkg_version}") } * ", "
         end
 
         if formulae_to_install.empty?
@@ -344,9 +344,10 @@ module Homebrew
       def formula_upgrade_descriptions(formulae)
         formulae.map do |formula|
           if formula.optlinked?
-            "#{formula.full_specified_name} #{Keg.new(formula.opt_prefix).version} -> #{formula.pkg_version}"
+            "#{Formatter.identifier(formula.full_specified_name)} " \
+              "#{Keg.new(formula.opt_prefix).version} -> #{Formatter.identifier(formula.pkg_version.to_s)}"
           else
-            "#{formula.full_specified_name} #{formula.pkg_version}"
+            "#{Formatter.identifier(formula.full_specified_name)} #{Formatter.identifier(formula.pkg_version.to_s)}"
           end
         end
       end
