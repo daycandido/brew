@@ -307,7 +307,7 @@ class LinkageChecker
       next true if Formula[full_name].bin.directory?
 
       name = full_name.split("/").last
-      @brewed_dylibs.keys.map { |l| l.split("/").last }.include?(name)
+      @brewed_dylibs.each_key.any? { |l| l.split("/").last == name }
     end
 
     # Remove no_linkage dependencies from unnecessary_deps since they're expected not to have linkage
