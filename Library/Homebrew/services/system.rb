@@ -90,17 +90,21 @@ module Homebrew
               (sudo_user = ENV.fetch("HOMEBREW_SUDO_USER", nil).present?) ||
               (Process.uid != Process.euid)
           if @output_warning.blank? && ENV.fetch("HOMEBREW_SERVICES_NO_DOMAIN_WARNING", nil).blank?
-            if ssh_tty
-              opoo "running over SSH without /dev/console ownership, using user/* instead of gui/* domain!"
+            warning = if ssh_tty
+              "running over SSH without /dev/console ownership, using user/* instead of gui/* domain!\n"
             elsif sudo_user
-              opoo "running through sudo, using user/* instead of gui/* domain!"
+              "running through sudo, using user/* instead of gui/* domain!\n"
             else
-              opoo "uid and euid do not match, using user/* instead of gui/* domain!"
+              "uid and euid do not match, using user/* instead of gui/* domain!\n"
             end
+
             unless Homebrew::EnvConfig.no_env_hints?
-              $stderr.puts "Hide this warning by setting `HOMEBREW_SERVICES_NO_DOMAIN_WARNING=1`."
-              $stderr.puts "Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`)."
+              warning += "Hide this warning by setting `HOMEBREW_SERVICES_NO_DOMAIN_WARNING=1`.\n" \
+                         "Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).\n"
             end
+
+            opoo warning.chomp
+
             @output_warning = T.let(true, T.nilable(TrueClass))
           end
           "user/#{Process.euid}"
