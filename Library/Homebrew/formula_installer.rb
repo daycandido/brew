@@ -1231,10 +1231,12 @@ on_request: installed_on_request?, options:)
 
     return if link_overwrite_backup.empty?
 
-    opoo "These files were overwritten during the `brew link` step:"
-    puts link_overwrite_backup.keys
-    puts
-    puts "They have been backed up to: #{backup_dir}"
+    opoo <<~EOS
+      These files were overwritten during the `brew link` step:
+      #{link_overwrite_backup.keys.join("\n")}
+
+      They have been backed up to: #{backup_dir}
+    EOS
     @show_summary_heading = true
   end
 
@@ -1291,8 +1293,10 @@ on_request: installed_on_request?, options:)
     Cleaner.new(formula).clean
   # Handle all possible exceptions when cleaning does not complete.
   rescue Exception => e # rubocop:disable Lint/RescueException
-    opoo "The cleaning step did not complete successfully"
-    puts "Still, the installation was successful, so we will link it into your prefix."
+    opoo <<~EOS
+      The cleaning step did not complete successfully
+      Still, the installation was successful, so we will link it into your prefix.
+    EOS
 
     require "utils/backtrace"
     odebug e, Utils::Backtrace.clean(e)
@@ -1369,9 +1373,11 @@ on_request: installed_on_request?, options:)
     end
   # Handle all possible exceptions when postinstall does not complete.
   rescue Exception => e # rubocop:disable Lint/RescueException
-    opoo "The post-install step did not complete successfully"
-    puts "You can try again using:"
-    puts "  brew postinstall #{formula.full_name}"
+    opoo <<~EOS
+      The post-install step did not complete successfully
+      You can try again using:
+        brew postinstall #{formula.full_name}
+    EOS
 
     require "utils/backtrace"
     odebug e, Utils::Backtrace.clean(e), always_display: Homebrew::EnvConfig.developer?
