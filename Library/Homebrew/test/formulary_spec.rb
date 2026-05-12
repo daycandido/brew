@@ -619,8 +619,9 @@ RSpec.describe Formulary do
         expect(formula).to be_a(Formula)
         expect(formula.declared_deps.count).to eq 7
         expect(formula.deps.count).to eq 6
-        expect(formula.deps.map(&:name).include?("variations_dep")).to be true
-        expect(formula.deps.map(&:name).include?("uses_from_macos_dep")).to be false
+        # ⚡ Bolt: Optimized by replacing map.include? with any? to avoid intermediate array allocations
+        expect(formula.deps.any? { |dep| dep.name == "variations_dep" }).to be true
+        expect(formula.deps.any? { |dep| dep.name == "uses_from_macos_dep" }).to be false
       end
 
       it "returns a Formula without duplicated deps and uses_from_macos with variations on Linux", :needs_linux do
@@ -631,7 +632,8 @@ RSpec.describe Formulary do
         expect(formula).to be_a(Formula)
         expect(formula.declared_deps.count).to eq 6
         expect(formula.deps.count).to eq 6
-        expect(formula.deps.map(&:name).include?("uses_from_macos_dep")).to be true
+        # ⚡ Bolt: Optimized by replacing map.include? with any? to avoid intermediate array allocations
+        expect(formula.deps.any? { |dep| dep.name == "uses_from_macos_dep" }).to be true
       end
 
       it "returns a Formula with the correct uses_from_macos dep on older macOS", :needs_macos do
@@ -642,7 +644,8 @@ RSpec.describe Formulary do
         expect(formula).to be_a(Formula)
         expect(formula.declared_deps.count).to eq 6
         expect(formula.deps.count).to eq 5
-        expect(formula.deps.map(&:name).include?("uses_from_macos_dep")).to be true
+        # ⚡ Bolt: Optimized by replacing map.include? with any? to avoid intermediate array allocations
+        expect(formula.deps.any? { |dep| dep.name == "uses_from_macos_dep" }).to be true
       end
 
       context "with core tap migration renames" do
