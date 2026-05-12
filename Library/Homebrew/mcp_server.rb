@@ -313,7 +313,8 @@ module Homebrew
       new_output = T.let(false, T::Boolean)
       output = +""
 
-      text = Open3.popen2e(HOMEBREW_BREW_FILE, brew_command, *command_args) do |stdin, io, _wait|
+      text = Open3.popen2e({ "HOMEBREW_NO_COLOR" => "1" }, HOMEBREW_BREW_FILE, brew_command,
+                           *command_args) do |stdin, io, _wait|
         stdin.close
 
         reader = Thread.new do
@@ -356,8 +357,6 @@ module Homebrew
 
     sig { params(tool_name: Symbol, arguments: T::Hash[String, T.untyped]).returns(T::Array[String]) }
     def tool_command_arguments(tool_name, arguments)
-      require "shellwords"
-
       case tool_name
       when :style
         style_args = []
@@ -382,7 +381,6 @@ module Homebrew
         [arguments["formula_or_cask"]]
       end.compact
         .reject(&:empty?)
-        .map { |arg| Shellwords.escape(arg) }
     end
 
     sig {
