@@ -28,8 +28,8 @@ module RuboCop
                 dep_types = dep.values.first
                 dep_types = dep_types.array_type? ? dep_types.values : [dep_types]
                 # ⚡ Bolt: Optimized by replacing select.map.include? with any? to avoid intermediate array allocations
-                dep.keys.first.str_content if dep_types.any? do |dep_type|
-                  dep_type.sym_type? && dep_type.value == :build
+                if dep_types.any? { |dep_type| dep_type.sym_type? && dep_type.value == :build }
+                  dep.keys.first.str_content
                 end
               else
                 dep.str_content
