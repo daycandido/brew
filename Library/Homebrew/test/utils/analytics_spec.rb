@@ -100,6 +100,7 @@ RSpec.describe Utils::Analytics do
       ENV.delete("HOMEBREW_NO_ANALYTICS_THIS_RUN")
       ENV.delete("HOMEBREW_NO_ANALYTICS")
       ENV["HOMEBREW_ANALYTICS_DEBUG"] = "true"
+      stub_const("Utils::Analytics::INFLUX_TOKEN", "test_token")
       expect(described_class).to receive(:deferred_curl).once
       described_class.report_influx(:install, { on_request: }, { package:, tap_name: })
     end

@@ -11,7 +11,7 @@ module Utils
   # Helper module for fetching and reporting analytics data.
   module Analytics
     INFLUX_BUCKET = "analytics"
-    INFLUX_TOKEN = "iVdsgJ_OjvTYGAA79gOfWlA_fX0QCuj4eYUNdb-qVUTrC3tp3JTWCADVNE9HxV0kp2ZjIK9tuthy_teX4szr9A=="
+    INFLUX_TOKEN = T.let(ENV.fetch("HOMEBREW_ANALYTICS_INFLUX_TOKEN", "").freeze, String)
     INFLUX_HOST = "https://eu-central-1-1.aws.cloud2.influxdata.com"
     INFLUX_ORG = "d81a3e6d582d485f"
 
@@ -27,7 +27,7 @@ module Utils
                fields:      T::Hash[Symbol, T.any(T::Boolean, String)]).void
       }
       def report_influx(measurement, tags, fields)
-        return if not_this_run? || disabled?
+        return if not_this_run? || disabled? || INFLUX_TOKEN.empty?
 
         # Tags are always implicitly strings and must have low cardinality.
         tags_string = tags.map { |k, v| "#{k}=#{v}" }
