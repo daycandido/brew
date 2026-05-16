@@ -52,6 +52,7 @@ task test: :build do
       "https://legacy.python.org/dev/peps/pep-0453/#recommendations-for-downstream-distributors",
       "https://metacpan.org/pod/local::lib",
       "https://www.gnu.org/software/bash/",
+      "https://wiki.debian.org/DFSGLicenses#Public_Domain",
     ],
     cache:               {
       timeframe: {
