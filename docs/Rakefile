@@ -51,7 +51,14 @@ task test: :build do
       "https://docs.fedoraproject.org/en-US/packaging-guidelines/#bundling",
       "https://legacy.python.org/dev/peps/pep-0453/#recommendations-for-downstream-distributors",
       "https://metacpan.org/pod/local::lib",
+      "https://wiki.debian.org/DFSGLicenses#Public_Domain",
       "https://www.gnu.org/software/bash/",
+      %r{https://docs\.microsoft\.com/en-us/windows/wsl/about},
+      %r{https://developer\.apple\.com/download/all},
+      %r{https://developer\.apple\.com/account},
+      %r{https://itunes\.apple\.com/us/app/xcode/id497799835},
+      %r{https://claude\.ai/download},
+      %r{https://setuptools\.readthedocs\.io/en/latest/setuptools\.html},
     ],
     cache:               {
       timeframe: {
