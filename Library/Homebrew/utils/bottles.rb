@@ -128,8 +128,12 @@ module Utils
         elsif !tabfile.exist? && bottle_json_path&.exist?
           _, tag, = Utils::Bottles.extname_tag_rebuild(formula.local_bottle_path.to_s)
           bottle_hash = JSON.parse(File.read(bottle_json_path))
-          tab_json = bottle_hash[formula.full_name]["bottle"]["tags"][tag]["tab"].to_json
-          return Tab.from_file_content(tab_json, tabfile)
+          tab_json = bottle_hash.dig(formula.full_name, "bottle", "tags", tag, "tab")&.to_json
+          if tab_json
+            return Tab.from_file_content(tab_json, tabfile)
+          else
+            tab = keg.tab
+          end
         else
           tab = keg.tab
         end
