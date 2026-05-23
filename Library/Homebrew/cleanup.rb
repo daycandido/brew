@@ -479,7 +479,8 @@ module Homebrew
 
       downloads = (cache/"downloads").children
 
-      referenced_downloads = cache_files.map { |file| file[:path] }.select(&:symlink?).map(&:resolved_path)
+      # ⚡ Bolt: Optimized by replacing map.select.map with filter_map to avoid intermediate array allocations
+      referenced_downloads = cache_files.filter_map { |file| file[:path].resolved_path if file[:path].symlink? }
 
       (downloads - referenced_downloads).each do |download|
         if self.class.incomplete?(download)
