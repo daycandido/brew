@@ -50,6 +50,7 @@ task test: :build do
       %r{https://gist.github.com/},
       "https://docs.fedoraproject.org/en-US/packaging-guidelines/#bundling",
       "https://legacy.python.org/dev/peps/pep-0453/#recommendations-for-downstream-distributors",
+      "https://wiki.debian.org/DFSGLicenses#Public_Domain",
       "https://metacpan.org/pod/local::lib",
       "https://www.gnu.org/software/bash/",
     ],
