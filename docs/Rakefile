@@ -44,6 +44,8 @@ task test: :build do
     ignore_urls:         [
       "/",
       %r{/rubydoc/},
+      "https://wiki.debian.org/DFSGLicenses#Public_Domain",
+      %r{https://itunes\.apple\.com/},
       %r{https://docs\.brew\.sh/},
       %r{https://github.com/},
       %r{https://homebrew.1password.com/},
