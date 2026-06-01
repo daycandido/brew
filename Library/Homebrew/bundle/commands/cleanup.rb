@@ -153,7 +153,9 @@ module Homebrew
           require "bundle/cask"
 
           @kept_formulae ||= begin
-            kept_formulae = @dsl.entries.select { |e| e.type == :brew }.map(&:name)
+            # ⚡ Bolt: Optimized by replacing select.map with filter_map
+            # to avoid intermediate array allocations and reduce GC pressure.
+            kept_formulae = @dsl.entries.filter_map { |e| e.name if e.type == :brew }
             kept_formulae += Homebrew::Bundle::Cask.formula_dependencies(kept_casks)
             kept_formulae.map! do |f|
               Homebrew::Bundle::Brew.formula_aliases.fetch(
@@ -210,7 +212,9 @@ module Homebrew
           require "bundle/tap"
 
           kept_formulae = self.kept_formulae(global:, file:).filter_map { lookup_formula(it) }
-          kept_taps = @dsl.entries.select { |e| e.type == :tap }.map(&:name)
+          # ⚡ Bolt: Optimized by replacing select.map with filter_map
+          # to avoid intermediate array allocations and reduce GC pressure.
+          kept_taps = @dsl.entries.filter_map { |e| e.name if e.type == :tap }
           kept_taps += kept_formulae.filter_map(&:tap).map(&:name)
           current_taps = Homebrew::Bundle::Tap.tap_names
           current_taps - kept_taps - IGNORED_TAPS
