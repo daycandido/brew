@@ -28,10 +28,12 @@ module Homebrew
           return packages if packages
 
           @packages = if (go = package_manager_executable)
+            require "utils/popen"
             ENV["GOBIN"] = ENV.fetch("HOMEBREW_GOBIN", nil)
             ENV["GOPATH"] = ENV.fetch("HOMEBREW_GOPATH", nil)
-            gobin = `#{go} env GOBIN`.chomp
-            gopath = `#{go} env GOPATH`.chomp
+            # 🛡️ Sentinel: Fixed command injection vulnerability by using Utils.popen_read with array arguments
+            gobin = Utils.popen_read(go.to_s, "env", "GOBIN").chomp
+            gopath = Utils.popen_read(go.to_s, "env", "GOPATH").chomp
             bin_dir = gobin.empty? ? "#{gopath}/bin" : gobin
             if File.directory?(bin_dir)
               binaries = Dir.glob("#{bin_dir}/*").select do |file|
@@ -39,7 +41,7 @@ module Homebrew
               end
 
               binaries.filter_map do |binary|
-                output = `#{go} version -m "#{binary}" 2>/dev/null`
+                output = Utils.popen_read(go.to_s, "version", "-m", binary, err: :close)
                 next if output.empty?
 
                 lines = output.split("\n")
@@ -92,11 +94,13 @@ module Homebrew
 
         sig { override.params(items: T::Array[String]).void }
         def cleanup!(items)
+          require "utils/popen"
           go = package_manager_executable
           return if go.nil?
 
-          gobin = `#{go} env GOBIN`.chomp
-          gopath = `#{go} env GOPATH`.chomp
+          # 🛡️ Sentinel: Fixed command injection vulnerability by using Utils.popen_read with array arguments
+          gobin = Utils.popen_read(go.to_s, "env", "GOBIN").chomp
+          gopath = Utils.popen_read(go.to_s, "env", "GOPATH").chomp
           bin_dir = gobin.empty? ? "#{gopath}/bin" : gobin
           return unless File.directory?(bin_dir)
 
@@ -104,7 +108,7 @@ module Homebrew
           Dir.glob("#{bin_dir}/*").each do |binary|
             next if !File.executable?(binary) || File.directory?(binary) || File.symlink?(binary)
 
-            output = `#{go} version -m "#{binary}" 2>/dev/null`
+            output = Utils.popen_read(go.to_s, "version", "-m", binary, err: :close)
             next if output.empty?
 
             path_line = output.split("\n").find { |line| line.strip.start_with?("path\t") }
