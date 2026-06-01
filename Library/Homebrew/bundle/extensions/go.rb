@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "bundle/extensions/extension"
+require "utils/popen"
 
 module Homebrew
   module Bundle
@@ -28,10 +29,8 @@ module Homebrew
           return packages if packages
 
           @packages = if (go = package_manager_executable)
-            require "utils/popen"
             ENV["GOBIN"] = ENV.fetch("HOMEBREW_GOBIN", nil)
             ENV["GOPATH"] = ENV.fetch("HOMEBREW_GOPATH", nil)
-            # 🛡️ Sentinel: Fixed command injection vulnerability by using Utils.popen_read with array arguments
             gobin = Utils.popen_read(go.to_s, "env", "GOBIN").chomp
             gopath = Utils.popen_read(go.to_s, "env", "GOPATH").chomp
             bin_dir = gobin.empty? ? "#{gopath}/bin" : gobin
@@ -94,11 +93,9 @@ module Homebrew
 
         sig { override.params(items: T::Array[String]).void }
         def cleanup!(items)
-          require "utils/popen"
           go = package_manager_executable
           return if go.nil?
 
-          # 🛡️ Sentinel: Fixed command injection vulnerability by using Utils.popen_read with array arguments
           gobin = Utils.popen_read(go.to_s, "env", "GOBIN").chomp
           gopath = Utils.popen_read(go.to_s, "env", "GOPATH").chomp
           bin_dir = gobin.empty? ? "#{gopath}/bin" : gobin
