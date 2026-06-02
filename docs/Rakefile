@@ -49,6 +49,7 @@ task test: :build do
       %r{https://homebrew.1password.com/},
       %r{https://gist.github.com/},
       "https://docs.fedoraproject.org/en-US/packaging-guidelines/#bundling",
+      "https://wiki.debian.org/DFSGLicenses#Public_Domain",
       "https://legacy.python.org/dev/peps/pep-0453/#recommendations-for-downstream-distributors",
       "https://metacpan.org/pod/local::lib",
       "https://www.gnu.org/software/bash/",
