@@ -272,7 +272,9 @@ class Dependency
 
     def merge_tags(deps)
       other_tags = deps.flat_map(&:option_tags).uniq
-      other_tags << :test if deps.flat_map(&:tags).include?(:test)
+      # ⚡ Bolt: Optimized by replacing flat_map.include? with any?.include? to avoid
+      # intermediate array allocations and short-circuit evaluation.
+      other_tags << :test if deps.any? { |dep| dep.tags.include?(:test) }
       merge_necessity(deps) + merge_temporality(deps) + other_tags
     end
 
