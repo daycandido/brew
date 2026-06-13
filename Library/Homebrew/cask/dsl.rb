@@ -684,8 +684,9 @@ module Cask
     ORDINARY_ARTIFACT_CLASSES.each do |klass|
       define_method(klass.dsl_key) do |*args, **kwargs|
         T.bind(self, DSL)
-        if [*artifacts.map(&:class), klass].include?(Artifact::StageOnly) &&
-           artifacts.map(&:class).intersect?(ACTIVATABLE_ARTIFACT_CLASSES)
+        # ⚡ Bolt: Optimized by avoiding intermediate array allocations and Set intersection
+        if (klass == Artifact::StageOnly || artifacts.any?(Artifact::StageOnly)) &&
+           artifacts.any? { |a| ACTIVATABLE_ARTIFACT_CLASSES.include?(a.class) }
           raise CaskInvalidError.new(cask, "'stage_only' must be the only activatable artifact.")
         end
 
