@@ -1,0 +1,3 @@
+## 2024-05-04 - Combined multiline warnings in Homebrew CLI output
+**Learning:** Homebrew's CLI output uses `opoo` for warnings, but currently splits multiline warnings by calling `opoo` for the first line and `puts` for subsequent lines (like the "building from source is not supported!" warning). This breaks semantic styling, making only the first line look like a warning while the rest look like standard output. The Homebrew team explicitly prefers heredocs with `opoo` for multi-line warnings.
+**Action:** Always combine multiline warnings into a single string using a heredoc (e.g., `opoo <<~EOS`) instead of splitting them across `opoo` and `puts`.
