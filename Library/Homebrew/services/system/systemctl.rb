@@ -7,12 +7,14 @@ module Homebrew
       module Systemctl
         sig { returns(T.nilable(Pathname)) }
         def self.executable
-          @executable ||= T.let(which("systemctl"), T.nilable(Pathname))
+          return @executable if defined?(@executable)
+
+          @executable = T.let(which("systemctl"), T.nilable(Pathname))
         end
 
         sig { void }
         def self.reset_executable!
-          @executable = nil
+          remove_instance_variable(:@executable) if defined?(@executable)
         end
 
         sig { returns(String) }
