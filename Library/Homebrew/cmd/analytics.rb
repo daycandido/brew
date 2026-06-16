@@ -37,8 +37,10 @@ module Homebrew
           Utils::Analytics.disable!
         when "regenerate-uuid"
           Utils::Analytics.delete_uuid!
-          opoo "Homebrew no longer uses an analytics UUID so this has been deleted!"
-          puts "brew analytics regenerate-uuid is no longer necessary."
+          opoo <<~EOS
+            Homebrew no longer uses an analytics UUID so this has been deleted!
+            brew analytics regenerate-uuid is no longer necessary.
+          EOS
         else
           raise UsageError, "unknown subcommand: #{args.named.first}"
         end
