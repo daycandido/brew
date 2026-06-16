@@ -815,8 +815,9 @@ class ReporterHub # rubocop:todo Style/OneClassPerFile
     dump_deleted_formula_report
     dump_deleted_cask_report
 
-    outdated_formulae = Formula.installed.select(&:outdated?).map(&:name)
-    outdated_casks = Cask::Caskroom.casks.select(&:outdated?).map(&:token)
+    # ⚡ Bolt: Optimized by replacing select.map with filter_map to avoid intermediate array allocations
+    outdated_formulae = Formula.installed.filter_map { |f| f.name if f.outdated? }
+    outdated_casks = Cask::Caskroom.casks.filter_map { |c| c.token if c.outdated? }
     unless auto_update
       output_dump_formula_or_cask_report "Outdated Formulae", outdated_formulae
       output_dump_formula_or_cask_report "Outdated Casks", outdated_casks
