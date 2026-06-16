@@ -202,7 +202,7 @@ RSpec.describe Homebrew::Cmd::InstallCmd do
 
     expect { cmd.run }.to output(<<~EOS).to_stdout
       ==> Upgrading 1 outdated package:
-      codex 0.117.0 -> 0.118.0
+      codex #{Tty.red}0.117.0#{Tty.reset} -> #{Tty.green}0.118.0#{Tty.reset}
       ==> Fetching downloads for: testball_bottle and codex
     EOS
   end
