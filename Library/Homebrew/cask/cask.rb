@@ -362,7 +362,7 @@ module Cask
           current_version:    version,
         }
       else
-        "#{token} (#{installed_version}) != #{version}"
+        "#{token} (#{Tty.red}#{installed_version}#{Tty.reset}) != #{Tty.green}#{version}#{Tty.reset}"
       end
     end
 
