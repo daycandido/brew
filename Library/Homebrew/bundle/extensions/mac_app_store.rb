@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "bundle/extensions/extension"
+require "utils/popen"
 
 module Homebrew
   module Bundle
@@ -54,7 +55,7 @@ module Homebrew
           return apps if apps
 
           @apps = if (mas = package_manager_executable)
-            `#{mas} list 2>/dev/null`.split("\n").filter_map do |app|
+            Utils.popen_read(mas, "list", err: :close).split("\n").filter_map do |app|
               app_details = app.match(/\A\s*(?<id>\d+)\s+(?<name>.*?)\s+\((?<version>[\d.]*)\)\Z/)
               next if app_details.nil?
 
@@ -128,7 +129,7 @@ module Homebrew
           return outdated_app_ids if outdated_app_ids
 
           @outdated_app_ids = if (mas = package_manager_executable)
-            `#{mas} outdated 2>/dev/null`.split("\n").map do |app|
+            Utils.popen_read(mas, "outdated", err: :close).split("\n").map do |app|
               app.split(" ", 2).first.to_s
             end
           end
