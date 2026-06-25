@@ -128,7 +128,8 @@ module Language
 
       sig { params(formula: Formula).returns(Utils::Shebang::RewriteInfo) }
       def detected_node_shebang(formula = T.cast(self, Formula))
-        node_deps = formula.deps.select(&:required?).map(&:name).grep(/^node(@.+)?$/)
+        # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+        node_deps = formula.deps.filter_map { |dep| dep.name if dep.required? }.grep(/^node(@.+)?$/)
         raise ShebangDetectionError.new("Node", "formula does not depend on Node") if node_deps.empty?
         raise ShebangDetectionError.new("Node", "formula has multiple Node dependencies") if node_deps.length > 1
 
