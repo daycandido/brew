@@ -745,7 +745,8 @@ class ErrorDuringExecution < RuntimeError
 
   sig { returns(String) }
   def stderr
-    Array(output).select { |type,| type == :stderr }.map(&:last).join
+    # ⚡ Bolt: Optimized by replacing select.map with filter_map to avoid intermediate array allocations
+    Array(output).filter_map { |type, out| out if type == :stderr }.join
   end
 end
 
