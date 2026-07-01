@@ -32,7 +32,8 @@ module Language
 
       sig { params(formula: Formula).returns(Utils::Shebang::RewriteInfo) }
       def detected_php_shebang(formula = T.cast(self, Formula))
-        php_deps = formula.deps.select(&:required?).map(&:name).grep(/^php(@.+)?$/)
+        # ⚡ Bolt: Optimized by replacing select.map with filter_map to avoid intermediate array allocations
+        php_deps = formula.deps.filter_map { |d| d.name if d.required? }.grep(/^php(@.+)?$/)
         raise ShebangDetectionError.new("PHP", "formula does not depend on PHP") if php_deps.empty?
         raise ShebangDetectionError.new("PHP", "formula has multiple PHP dependencies") if php_deps.length > 1
 

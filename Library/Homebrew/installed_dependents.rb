@@ -24,7 +24,8 @@ module InstalledDependents
     params(kegs: T::Array[Keg], casks: T::Array[Cask::Cask]).returns(T.nilable([T::Array[Keg], T::Array[String]]))
   }
   def find_some_installed_dependents(kegs, casks: [])
-    keg_names = kegs.select(&:optlinked?).map(&:name)
+    # ⚡ Bolt: Optimized by replacing select.map with filter_map to avoid intermediate array allocations
+    keg_names = kegs.filter_map { |k| k.name if k.optlinked? }
     keg_formulae = []
     kegs_by_source = kegs.group_by do |keg|
       # First, attempt to resolve the keg to a formula
