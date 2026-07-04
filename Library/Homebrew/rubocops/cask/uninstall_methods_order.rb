@@ -179,8 +179,8 @@ module RuboCop
           if value_node.sym_type?
             [T.cast(value_node, AST::SymbolNode).value]
           elsif value_node.array_type?
-            value_node.children.select(&:sym_type?).map do |child|
-              T.cast(child, AST::SymbolNode).value
+            value_node.children.filter_map do |child|
+              T.cast(child, AST::SymbolNode).value if child.sym_type?
             end
           else
             []
