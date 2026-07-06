@@ -78,7 +78,8 @@ module Homebrew
             (versioned_formulae = formula.versioned_formulae - [formula]) &&
             versioned_formulae.present?
         versioned_aliases, unversioned_aliases = formula.aliases.partition { |a| /.@\d/.match?(a) }
-        _, last_alias_version = versioned_formulae.map(&:name).last.split("@")
+        # Avoid allocating an intermediate array by accessing the last element directly
+        _, last_alias_version = versioned_formulae.last.name.split("@")
 
         alias_name_major = "#{formula.name}@#{formula.version.major}"
         alias_name_major_minor = "#{formula.name}@#{formula.version.major_minor}"
@@ -106,7 +107,8 @@ module Homebrew
         valid_versioned_aliases = versioned_aliases & valid_main_alias_names
         invalid_versioned_aliases = versioned_aliases - valid_main_alias_names - valid_other_alias_names
 
-        latest_versioned_formula = versioned_formulae.map(&:name).first
+        # Avoid allocating an intermediate array by accessing the first element directly
+        latest_versioned_formula = versioned_formulae.first.name
 
         if valid_versioned_aliases.empty? && alias_name != latest_versioned_formula
           if formula.tap
