@@ -202,6 +202,7 @@
 !/Dockerfile.test.yml
 !/LICENSE.txt
 !/README.md
+!/setup-claude-code.sh
 
 # Unignore tests' bundle config
 !/Library/Homebrew/test/.bundle/config
