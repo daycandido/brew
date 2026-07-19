@@ -51,13 +51,17 @@ module Homebrew
       sig { void }
       def output_update_report
         if ENV["HOMEBREW_ADDITIONAL_GOOGLE_ANALYTICS_ID"].present?
-          opoo "HOMEBREW_ADDITIONAL_GOOGLE_ANALYTICS_ID is now a no-op so can be unset."
-          puts "All Homebrew Google Analytics code and data was destroyed."
+          opoo <<~EOS
+            HOMEBREW_ADDITIONAL_GOOGLE_ANALYTICS_ID is now a no-op so can be unset.
+            All Homebrew Google Analytics code and data was destroyed.
+          EOS
         end
 
         if ENV["HOMEBREW_NO_GOOGLE_ANALYTICS"].present?
-          opoo "HOMEBREW_NO_GOOGLE_ANALYTICS is now a no-op so can be unset."
-          puts "All Homebrew Google Analytics code and data was destroyed."
+          opoo <<~EOS
+            HOMEBREW_NO_GOOGLE_ANALYTICS is now a no-op so can be unset.
+            All Homebrew Google Analytics code and data was destroyed.
+          EOS
         end
 
         unless args.quiet?
