@@ -228,27 +228,9 @@ module Utils
         if !$stdout.tty?
           string
         elsif Homebrew::EnvConfig.no_emoji?
-          Formatter.warning("#{Tty.bold}#{string} (outdated)#{Tty.reset}")
+          Formatter.error("#{Tty.bold}#{string} (outdated)#{Tty.reset}")
         else
           "#{Tty.bold}#{string} #{Formatter.warning("⚠")}#{Tty.reset}"
-        end
-      end
-
-      sig { params(string: String).returns(String) }
-      def pretty_deprecated(string)
-        if $stdout.tty?
-          "#{string} #{Formatter.warning("(deprecated)")}"
-        else
-          string
-        end
-      end
-
-      sig { params(string: String).returns(String) }
-      def pretty_disabled(string)
-        if $stdout.tty?
-          "#{string} #{Formatter.error("(disabled)")}"
-        else
-          string
         end
       end
 
