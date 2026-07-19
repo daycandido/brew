@@ -251,8 +251,10 @@ module Homebrew
         end
 
         if build_flags.present? && !Homebrew::EnvConfig.developer?
-          opoo "building from source is not supported!"
-          puts "You're on your own. Failures are expected so don't create any issues, please!"
+          opoo <<~EOS
+            building from source is not supported!
+            You're on your own. Failures are expected so don't create any issues, please!
+          EOS
         end
 
         installed_formulae = formulae.select do |f|
