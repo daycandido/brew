@@ -63,6 +63,14 @@ module Tty
       string.gsub(/\033\[\d+(;\d+)*m/, "")
     end
 
+    sig { params(string: String).returns(Integer) }
+    def strip_ansi_length(string)
+      # Optimization: Skip regex if no ANSI escape codes are present
+      return string.length unless string.include?("\033")
+
+      string.gsub(/\033\[\d+(;\d+)*m/, "").length
+    end
+
     sig { params(line_count: Integer).returns(String) }
     def move_cursor_up(line_count)
       "\033[#{line_count}A"
