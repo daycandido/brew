@@ -9,6 +9,7 @@ require "cask/metadata"
 require "cask/tab"
 require "utils/bottles"
 require "utils/output"
+require "utils/tty"
 require "api_hashable"
 
 module Cask
@@ -362,7 +363,7 @@ module Cask
           current_version:    version,
         }
       else
-        "#{token} (#{installed_version}) != #{version}"
+        "#{token} (#{Tty.red}#{installed_version}#{Tty.reset}) < #{Tty.green}#{version}#{Tty.reset}"
       end
     end
 
