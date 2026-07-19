@@ -142,7 +142,10 @@ module Formatter
     fallback.call if respond_to?(:tty?) ? !T.unsafe(self).tty? : !$stdout.tty?
 
     console_width = Tty.width
-    object_lengths = objects.map { |obj| Tty.strip_ansi(obj).length }
+    object_lengths = objects.map do |obj|
+      # fast path: avoid expensive regex if no ANSI codes
+      obj.include?("\033") ? Tty.strip_ansi(obj).length : obj.length
+    end
     cols = (console_width + gap_size) / (T.must(object_lengths.max) + gap_size)
 
     fallback.call if cols < 2
