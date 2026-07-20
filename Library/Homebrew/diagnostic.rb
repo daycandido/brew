@@ -76,7 +76,7 @@ module Homebrew
       sig { params(relative_paths: T.any(String, T::Array[String])).void }
       def find_relative_paths(*relative_paths)
         @found = [HOMEBREW_PREFIX, "/usr/local"].uniq.reduce([]) do |found, prefix|
-          found + relative_paths.map { |f| File.join(prefix, f) }.select { |f| File.exist? f }
+          found + relative_paths.filter_map { |f| File.join(prefix, f) if File.exist? File.join(prefix, f) }
         end
       end
 
@@ -457,8 +457,7 @@ module Homebrew
               # only show the doctor message if there are any conflicts
               # rationale: a default install should not trigger any brew doctor messages
               conflicts = Dir["#{HOMEBREW_PREFIX}/bin/*"]
-                          .map { |fn| File.basename fn }
-                          .select { |bn| File.exist? "/usr/bin/#{bn}" }
+                          .filter_map { |fn| File.basename(fn) if File.exist?("/usr/bin/#{File.basename(fn)}") }
 
               unless conflicts.empty?
                 message = inject_file_list conflicts, <<~EOS
