@@ -28,14 +28,14 @@ module Homebrew
         String,
       )
       BUNDLE_ADD_FLAGS_DESCRIPTION = T.let(
-        ["`--cask`", "`--tap`", *BUNDLE_EXTENSIONS.select(&:add_supported?).map do |extension|
-          "`--#{extension.flag}`"
+        ["`--cask`", "`--tap`", *BUNDLE_EXTENSIONS.filter_map do |extension|
+          "`--#{extension.flag}`" if extension.add_supported?
         end].to_sentence.freeze,
         String,
       )
       BUNDLE_REMOVE_FLAGS_DESCRIPTION = T.let(
-        ["`--formula`", "`--cask`", "`--tap`", *BUNDLE_EXTENSIONS.select(&:remove_supported?).map do |extension|
-          "`--#{extension.flag}`"
+        ["`--formula`", "`--cask`", "`--tap`", *BUNDLE_EXTENSIONS.filter_map do |extension|
+          "`--#{extension.flag}`" if extension.remove_supported?
         end].to_sentence.freeze,
         String,
       )

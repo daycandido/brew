@@ -629,7 +629,7 @@ module Homebrew
       sig { returns(T.nilable(String)) }
       def check_deprecated_official_taps
         tapped_deprecated_taps =
-          Tap.select(&:official?).map(&:repository) & DEPRECATED_OFFICIAL_TAPS
+          Tap.filter_map { |t| t.repository if t.official? } & DEPRECATED_OFFICIAL_TAPS
 
         # TODO: remove this once it's no longer in the default GitHub Actions image
         tapped_deprecated_taps -= ["bundle"] if GitHub::Actions.env_set?
