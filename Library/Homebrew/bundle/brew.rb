@@ -272,7 +272,8 @@ module Homebrew
             installed_as_dependency?: installed_as_dependency || false,
             installed_on_request?:    installed_on_request || false,
             dependencies:             runtime_dependencies,
-            build_dependencies:       formula.deps.select(&:build?).map(&:name).uniq,
+            # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+            build_dependencies:       formula.deps.filter_map { |d| d.name if d.build? }.uniq,
             conflicts_with:           formula.conflicts.map(&:name),
             pinned?:                  formula.pinned? || false,
             outdated?:                formula.outdated? || false,
