@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "bundle/extensions/extension"
+require "utils/popen"
 
 module Homebrew
   module Bundle
@@ -39,7 +40,7 @@ module Homebrew
               end
 
               binaries.filter_map do |binary|
-                output = `#{go} version -m "#{binary}" 2>/dev/null`
+                output = Utils.popen_read(go.to_s, "version", "-m", binary, err: :close)
                 next if output.empty?
 
                 lines = output.split("\n")
@@ -104,7 +105,7 @@ module Homebrew
           Dir.glob("#{bin_dir}/*").each do |binary|
             next if !File.executable?(binary) || File.directory?(binary) || File.symlink?(binary)
 
-            output = `#{go} version -m "#{binary}" 2>/dev/null`
+            output = Utils.popen_read(go.to_s, "version", "-m", binary, err: :close)
             next if output.empty?
 
             path_line = output.split("\n").find { |line| line.strip.start_with?("path\t") }
