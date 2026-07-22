@@ -39,8 +39,8 @@ RSpec.describe Homebrew::Bundle::VscodeExtension do
           tamasfe.even-better-toml
         EOF
 
-        allow(described_class).to receive(:`)
-          .with('"code" --list-extensions 2>/dev/null')
+        allow(Utils).to receive(:safe_popen_read)
+          .with("code", "--list-extensions", err: File::NULL)
           .and_return(output)
         expect(dumper.extensions).to eql([
           "catppuccin.catppuccin-vsc",
