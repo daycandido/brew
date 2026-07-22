@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "bundle/extensions/extension"
+require "utils/popen"
 
 module Homebrew
   module Bundle
