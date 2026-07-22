@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "utils/popen"
 require "bundle/extensions/extension"
 
 module Homebrew
@@ -61,7 +62,7 @@ module Homebrew
           return remote_urls if remote_urls
 
           @remote_urls = if (flatpak = package_manager_executable)
-            output = `#{flatpak} remote-list --system --columns=name,url 2>/dev/null`.chomp
+            output = Utils.popen_read(flatpak, "remote-list", "--system", "--columns=name,url", err: :close).chomp
             urls = {}
             output.split("\n").each do |line|
               parts = line.strip.split("\t")
@@ -87,7 +88,7 @@ module Homebrew
             # List applications with their origin remote
             # Using --app to filter applications only
             # Using --columns=application,origin to get app IDs and their remotes
-            output = `#{flatpak} list --app --columns=application,origin 2>/dev/null`.chomp
+            output = Utils.popen_read(flatpak, "list", "--app", "--columns=application,origin", err: :close).chomp
 
             packages = output.split("\n").filter_map do |line|
               parts = line.strip.split("\t")
@@ -253,7 +254,7 @@ module Homebrew
           return false unless Bundle.system(flatpak, "install", "-y", "--system", url, verbose:)
 
           # Get the actual remote name used by Flatpak
-          output = `#{flatpak} list --app --columns=application,origin 2>/dev/null`.chomp
+          output = Utils.popen_read(flatpak, "list", "--app", "--columns=application,origin", err: :close).chomp
           installed = output.split("\n").find { |line| line.start_with?(name) }
           actual_remote = installed ? installed.split("\t")[1] : "#{name}-origin"
           actual_remote ||= "#{name}-origin"
@@ -313,7 +314,7 @@ module Homebrew
         # Get URL for an existing remote, or nil if not found
         sig { params(flatpak: String, remote_name: String).returns(T.nilable(String)) }
         def get_remote_url(flatpak, remote_name)
-          output = `#{flatpak} remote-list --system --columns=name,url 2>/dev/null`.chomp
+          output = Utils.popen_read(flatpak, "remote-list", "--system", "--columns=name,url", err: :close).chomp
           output.split("\n").each do |line|
             parts = line.split("\t")
             return parts[1] if parts[0] == remote_name
