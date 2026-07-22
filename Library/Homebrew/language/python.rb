@@ -137,7 +137,8 @@ module Language
         python_path = if use_python_from_path
           "/usr/bin/env python3"
         else
-          python_deps = formula.deps.select(&:required?).map(&:name).grep(/^python(@.+)?$/)
+          # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+          python_deps = formula.deps.filter_map { |dep| dep.name if dep.required? }.grep(/^python(@.+)?$/)
           raise ShebangDetectionError.new("Python", "formula does not depend on Python") if python_deps.empty?
           if python_deps.length > 1
             raise ShebangDetectionError.new("Python", "formula has multiple Python dependencies")

@@ -143,7 +143,8 @@ class AbstractDownloadStrategy # rubocop:todo Style/OneClassPerFile
   # @api public
   sig { overridable.returns(Time) }
   def source_modified_time
-    Pathname.pwd.to_enum(:find).select(&:file?).map(&:mtime).max
+    # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+    Pathname.pwd.to_enum(:find).filter_map { |file| file.mtime if file.file? }.max
   end
 
   # Remove {#cached_location} and any other files associated with the resource

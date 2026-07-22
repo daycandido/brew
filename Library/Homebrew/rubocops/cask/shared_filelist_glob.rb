@@ -12,7 +12,8 @@ module RuboCop
           return if node.method_name != :zap
 
           node.each_descendant(:pair).each do |pair|
-            symbols = pair.children.select(&:sym_type?).map(&:value)
+            # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+            symbols = pair.children.filter_map { |child| child.value if child.sym_type? }
             next unless symbols.include?(:trash)
 
             pair.each_descendant(:array).each do |array|

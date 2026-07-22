@@ -268,7 +268,8 @@ module Homebrew
 
           # Delete these files so we don't end up uploading them.
           files_to_delete = mismatched_checksums.keys + unexpected_bottles
-          files_to_delete += files_to_delete.select(&:symlink?).map(&:realpath)
+          # ⚡ Bolt: Use filter_map to avoid intermediate array allocations
+          files_to_delete += files_to_delete.filter_map { |file| file.realpath if file.symlink? }
           FileUtils.rm_rf files_to_delete
 
           test "false" # ensure that `test-bot` exits with an error.
