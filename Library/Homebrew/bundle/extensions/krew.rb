@@ -46,7 +46,7 @@ module Homebrew
 
           @packages = if package_manager_installed?
             with_package_manager_env do |kubectl|
-              parse_plugin_list(`#{kubectl} krew list 2>/dev/null`)
+              parse_plugin_list(Utils.popen_read(kubectl.to_s, "krew", "list", err: :close))
             end
           else
             []
