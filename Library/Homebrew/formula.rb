@@ -1556,6 +1556,9 @@ class Formula
   sig { overridable.void }
   def post_install; end
 
+  sig { params(block: T.nilable(T.proc.void)).void }
+  def self.post_install_steps(&block); end
+
   sig { returns(T::Boolean) }
   def post_install_defined?
     method(:post_install).owner != Formula
