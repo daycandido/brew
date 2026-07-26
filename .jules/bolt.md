@@ -4,3 +4,6 @@
 ## 2026-06-04 - Avoid select.map
 **Learning:** Using `.select(&:property).map(&:other_property)` evaluates the entire collection and allocates an intermediate array, increasing garbage collection pressure.
 **Action:** Use `.filter_map { |item| item.other_property if item.property }` instead to avoid intermediate allocations and speed up processing.
+## 2024-05-24 - Avoid map.any?
+**Learning:** Using `.map(&:property).any?` evaluates the entire collection and allocates an intermediate boolean array, which cannot short-circuit when a matching item is found early, increasing execution time and memory allocations significantly.
+**Action:** Use `.any?(&:property)` instead, which short-circuits upon finding a match and avoids array allocations.
