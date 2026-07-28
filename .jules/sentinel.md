@@ -2,3 +2,7 @@
 **Vulnerability:** Calling `safe_system` with a single string containing interpolated variables (e.g., `safe_system "stackprof --d3-flamegraph #{prof_input_filename} > #{prof_filename}"`) allows shell command injection.
 **Learning:** `safe_system "cmd #{var}"` passes the entire string to `/bin/sh` to be executed. If `var` is attacker-controlled, they can run arbitrary commands. It also fails to bypass `/bin/sh` with `execve`.
 **Prevention:** Always use the array syntax for `safe_system` (e.g., `safe_system "cmd", "arg", out: file`) which bypasses the shell completely and prevents command injection.
+## 2025-02-27 - Command Injection Risk via Backticks
+**Vulnerability:** Shell command execution using backticks (`` `cmd` ``) with string interpolation allows potential command injection if the interpolated variables are not properly sanitized, and redirection to `/dev/null` hides errors.
+**Learning:** Homebrew's `Utils.popen_read` is a safer alternative that takes an array of arguments, bypassing the shell's string evaluation and preventing command injection.
+**Prevention:** Use `Utils.popen_read(cmd, arg1, err: :close)` instead of `` `#{cmd} arg1 2>/dev/null` `` for executing shell commands and reading their output safely.
