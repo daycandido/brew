@@ -43,7 +43,7 @@ last_review_date: "2025-02-08"
 
 ## Contributors
 
-- [How to Open a Pull Request (and get it merged)](How-To-Open-a-Homebrew-Pull-Request.md)
+- [How to Open a pull request (and get it merged)](How-To-Open-a-Homebrew-Pull-Request.md)
 - [Formula Cookbook](Formula-Cookbook.md)
 - [Cask Cookbook](Cask-Cookbook.md)
 - [Acceptable Formulae](Acceptable-Formulae.md)
