@@ -1561,6 +1561,11 @@ class Formula
     method(:post_install).owner != Formula
   end
 
+  # To support formulas migrating to the API format that use post_install_steps do ... end
+  sig { params(block: T.proc.void).void }
+  def self.post_install_steps(&block)
+  end
+
   sig { void }
   def install_etc_var
     etc_var_dirs = [bottle_prefix/"etc", bottle_prefix/"var"]

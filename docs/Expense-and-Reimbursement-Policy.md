@@ -1,3 +1,6 @@
+---
+last_review_date: 2024-01-01
+---
 # Expense and Reimbursement Policy
 
 This document presents _guidelines_ for spending money on behalf of Homebrew and seeking reimbursement for expenses incurred while doing work to benefit Homebrew, such as paying for goods or services or traveling to conferences or the Annual General Meeting.
@@ -29,7 +32,7 @@ Assemble a document that includes:
 * The timeline for the purchase or dates of travel
 * A budget demonstrating a comparison among different options, e.g.
   * Different airlines or hotel chains and locations
-  * Different reasonable travel times, departures, and arrivals
+  * Different reasonable travel times, departures and arrivals
   * Different stores
   * Different vendors for a service
 * For non-consumable goods, who will store the item(s)
@@ -197,7 +200,7 @@ Homebrew will reimburse visa application expenses and other related expenses for
 
 ### Expenses that are never reimbursable
 
-* Partner, spouse, and/or companion travel
+* Partner, spouse and/or companion travel
 * First class, business class, economy-plus travel
 
 * Upgrades to air travel, car rentals, or hotel rooms
