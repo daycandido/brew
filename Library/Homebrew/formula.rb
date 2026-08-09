@@ -2446,6 +2446,10 @@ class Formula
     end
   end
 
+  # stub for post_install_steps from homebrew/core
+  sig { params(args: T.untyped, block: T.nilable(Proc)).void }
+  def self.post_install_steps(*args, &block); end
+
   # An array of all core {Formula} names.
   sig { returns(T::Array[String]) }
   def self.core_names
