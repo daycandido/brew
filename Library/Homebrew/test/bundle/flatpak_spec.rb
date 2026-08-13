@@ -123,8 +123,8 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "returns remote URLs" do
-        allow(described_class).to receive(:`).with("flatpak remote-list --system --columns=name,url 2>/dev/null")
-                                             .and_return("flathub\thttps://dl.flathub.org/repo/\nfedora\thttps://registry.fedoraproject.org/\n")
+        allow(Utils).to receive(:popen_read).with(any_args)
+                                            .and_return("flathub\thttps://dl.flathub.org/repo/\nfedora\thttps://registry.fedoraproject.org/\n")
         expect(dumper.remote_urls).to eql({
           "flathub" => "https://dl.flathub.org/repo/",
           "fedora"  => "https://registry.fedoraproject.org/",
@@ -132,12 +132,9 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "returns package list with remotes and URLs" do
-        allow(described_class).to receive(:`)
-          .with("flatpak list --app --columns=application,origin 2>/dev/null")
-          .and_return("org.gnome.Calculator\tflathub\ncom.spotify.Client\tflathub\n")
-        allow(described_class).to receive(:`)
-          .with("flatpak remote-list --system --columns=name,url 2>/dev/null")
-          .and_return("flathub\thttps://dl.flathub.org/repo/\n")
+        allow(Utils).to receive(:popen_read)
+          .with(any_args)
+          .and_return("org.gnome.Calculator\tflathub\ncom.spotify.Client\tflathub\n", "flathub\thttps://dl.flathub.org/repo/\n")
         expect(dumper.packages_with_remotes).to eql([
           { name: "com.spotify.Client", remote: "flathub", remote_url: "https://dl.flathub.org/repo/" },
           { name: "org.gnome.Calculator", remote: "flathub", remote_url: "https://dl.flathub.org/repo/" },
@@ -145,12 +142,9 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "returns package names only" do
-        allow(described_class).to receive(:`)
-          .with("flatpak list --app --columns=application,origin 2>/dev/null")
-          .and_return("org.gnome.Calculator\tflathub\ncom.spotify.Client\tflathub\n")
-        allow(described_class).to receive(:`)
-          .with("flatpak remote-list --system --columns=name,url 2>/dev/null")
-          .and_return("flathub\thttps://dl.flathub.org/repo/\n")
+        allow(Utils).to receive(:popen_read)
+          .with(any_args)
+          .and_return("org.gnome.Calculator\tflathub\ncom.spotify.Client\tflathub\n", "flathub\thttps://dl.flathub.org/repo/\n")
         expect(dumper.packages).to eql(["com.spotify.Client", "org.gnome.Calculator"])
       end
 
@@ -218,10 +212,8 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "handles packages without origin" do
-        allow(described_class).to receive(:`).with("flatpak list --app --columns=application,origin 2>/dev/null")
-                                             .and_return("org.gnome.Calculator\n")
-        allow(described_class).to receive(:`).with("flatpak remote-list --system --columns=name,url 2>/dev/null")
-                                             .and_return("flathub\thttps://dl.flathub.org/repo/\n")
+        allow(Utils).to receive(:popen_read).with(any_args)
+                                            .and_return("org.gnome.Calculator\n", "flathub\thttps://dl.flathub.org/repo/\n")
         expect(dumper.packages_with_remotes).to eql([
           { name: "org.gnome.Calculator", remote: "flathub", remote_url: "https://dl.flathub.org/repo/" },
         ])
@@ -329,8 +321,8 @@ RSpec.describe Homebrew::Bundle::Flatpak do
           end
 
           it "installs from .flatpakref directly" do
-            allow(described_class).to receive(:`).with("flatpak list --app --columns=application,origin 2>/dev/null")
-                                                 .and_return("org.example.App\texample-origin\n")
+            allow(Utils).to receive(:popen_read).with(any_args)
+                                                .and_return("org.example.App\texample-origin\n")
 
             expect(Homebrew::Bundle).to \
               receive(:system).with("flatpak", "install", "-y", "--system",
