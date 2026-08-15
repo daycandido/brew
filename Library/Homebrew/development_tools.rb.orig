@@ -69,7 +69,7 @@ class DevelopmentTools
     def clang_version
       @clang_version ||= T.let(
         if (path = locate("clang")) &&
-           (build_version = Utils.safe_popen_read(path.to_s, "--version")[/(?:clang|LLVM) version (\d+\.\d(?:\.\d)?)/, 1])
+           (build_version = `#{path} --version`[/(?:clang|LLVM) version (\d+\.\d(?:\.\d)?)/, 1])
           Version.new(build_version)
         else
           Version::NULL
@@ -84,7 +84,7 @@ class DevelopmentTools
     def clang_build_version
       @clang_build_version ||= T.let(
         if (path = locate("clang")) &&
-          (build_version = Utils.safe_popen_read(path.to_s, "--version")[%r{clang(-| version [^ ]+ \(tags/RELEASE_)(\d{2,})}, 2])
+          (build_version = `#{path} --version`[%r{clang(-| version [^ ]+ \(tags/RELEASE_)(\d{2,})}, 2])
           Version.new(build_version)
         else
           Version::NULL
@@ -99,7 +99,7 @@ class DevelopmentTools
     def llvm_clang_build_version
       @llvm_clang_build_version ||= T.let(begin
         path = Formulary.factory("llvm").opt_prefix/"bin/clang"
-        if path.executable? && (build_version = Utils.safe_popen_read(path.to_s, "--version")[/clang version (\d+\.\d\.\d)/, 1])
+        if path.executable? && (build_version = `#{path} --version`[/clang version (\d+\.\d\.\d)/, 1])
           Version.new(build_version)
         else
           Version::NULL
@@ -123,8 +123,7 @@ class DevelopmentTools
         path = HOMEBREW_PREFIX/"opt/#{CompilerSelector.preferred_gcc}/bin"/cc
         path = locate(cc) unless path.exist?
         version = if path &&
-                     (build_version = Utils.safe_popen_read(path.to_s, "--version")[/gcc(?:(?:-\d+(?:\.\d)?)? \(.+\))? (\d+\.\d\.\d)/,
-                                                                                    1])
+                     (build_version = `#{path} --version`[/gcc(?:(?:-\d+(?:\.\d)?)? \(.+\))? (\d+\.\d\.\d)/, 1])
           Version.new(build_version)
         else
           Version::NULL
