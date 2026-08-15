@@ -390,7 +390,7 @@ module Homebrew
 
         next unless @core_tap
 
-        if spec.requirements.map(&:recommended?).any? || spec.requirements.map(&:optional?).any?
+        if spec.requirements.any?(&:recommended?) || spec.requirements.any?(&:optional?)
           problem "Formulae in homebrew/core should not have optional or recommended requirements"
         end
       end
