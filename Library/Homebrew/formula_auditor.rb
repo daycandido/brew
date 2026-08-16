@@ -280,7 +280,7 @@ module Homebrew
         github_license = GitHub.get_repo_license(user, repo, ref: tag)
         return unless github_license
         return if (licenses + ["NOASSERTION"]).include?(github_license)
-        return if PERMITTED_LICENSE_MISMATCHES[github_license]&.any? { |license| licenses.include? license }
+        return if PERMITTED_LICENSE_MISMATCHES[github_license]&.intersect?(licenses)
         return if formula.tap&.audit_exception :permitted_formula_license_mismatches, formula.name
 
         problem "Formula license #{licenses} does not match GitHub license #{Array(github_license)}."
@@ -390,7 +390,7 @@ module Homebrew
 
         next unless @core_tap
 
-        if spec.requirements.map(&:recommended?).any? || spec.requirements.map(&:optional?).any?
+        if spec.requirements.any?(&:recommended?) || spec.requirements.any?(&:optional?)
           problem "Formulae in homebrew/core should not have optional or recommended requirements"
         end
       end
