@@ -45,7 +45,7 @@ module Homebrew
           @extensions = if (vscode = package_manager_executable)
             Bundle.exchange_uid_if_needed! do
               ENV["WSL_DISTRO_NAME"] = ENV.fetch("HOMEBREW_WSL_DISTRO_NAME", nil)
-              `"#{vscode}" --list-extensions 2>/dev/null`
+              Utils.popen_read(vscode.to_s, "--list-extensions", err: :close)
             end.split("\n").map(&:downcase)
           end
           return [] if @extensions.nil?
