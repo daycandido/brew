@@ -275,6 +275,8 @@ class Vernier::Output::Firefox::Thread
   def thread_category; end
 end
 
+Vernier::Output::Firefox::Thread::SAMPLE_CATEGORY_NAMES = T.let(T.unsafe(nil), Hash)
+
 class Vernier::Output::Markdown
   def initialize(profile, top_n: T.unsafe(nil), lines_per_file: T.unsafe(nil)); end
 
