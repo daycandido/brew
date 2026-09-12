@@ -31,39 +31,43 @@ RSpec.describe Homebrew::Bundle::Npm do
       end
 
       it "returns package list" do
-        allow(described_class).to receive(:`).with("npm list -g --depth=0 --json 2>/dev/null").and_return(<<~JSON)
-          {
-            "dependencies": {
-              "npm": { "version": "11.11.0" },
-              "vercel": { "version": "39.0.0" },
-              "typescript": { "version": "5.7.3" }
-            }
-          }
-        JSON
+        allow(Utils).to receive(:popen_read).with("npm", "list", "-g", "--depth=0", "--json", err: "/dev/null")
+                                            .and_return(<<~JSON)
+                                              {
+                                                "dependencies": {
+                                                  "npm": { "version": "11.11.0" },
+                                                  "vercel": { "version": "39.0.0" },
+                                                  "typescript": { "version": "5.7.3" }
+                                                }
+                                              }
+                                            JSON
 
         expect(dumper.packages).to eql(%w[vercel typescript])
       end
 
       it "excludes npm itself from the package list" do
-        allow(described_class).to receive(:`).with("npm list -g --depth=0 --json 2>/dev/null").and_return(<<~JSON)
-          {
-            "dependencies": {
-              "npm": { "version": "11.11.0" }
-            }
-          }
-        JSON
+        allow(Utils).to receive(:popen_read).with("npm", "list", "-g", "--depth=0", "--json", err: "/dev/null")
+                                            .and_return(<<~JSON)
+                                              {
+                                                "dependencies": {
+                                                  "npm": { "version": "11.11.0" }
+                                                }
+                                              }
+                                            JSON
 
         expect(dumper.packages).to be_empty
       end
 
       it "handles invalid JSON" do
-        allow(described_class).to receive(:`).with("npm list -g --depth=0 --json 2>/dev/null").and_return("not json")
+        allow(Utils).to receive(:popen_read).with("npm", "list", "-g", "--depth=0", "--json", err: "/dev/null")
+                                            .and_return("not json")
 
         expect(dumper.packages).to be_empty
       end
 
       it "handles empty output" do
-        allow(described_class).to receive(:`).with("npm list -g --depth=0 --json 2>/dev/null").and_return("")
+        allow(Utils).to receive(:popen_read).with("npm", "list", "-g", "--depth=0", "--json", err: "/dev/null")
+                                            .and_return("")
 
         expect(dumper.packages).to be_empty
       end
