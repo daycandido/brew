@@ -194,11 +194,11 @@ module FormulaCellarChecks
   def check_python_packages(lib, deps)
     return unless lib.directory?
 
-    lib_subdirs = lib.children
-                     .select(&:directory?)
-                     .map(&:basename)
+    pythons = lib.children.filter_map do |p|
+      next unless p.directory?
 
-    pythons = lib_subdirs.filter_map do |p|
+      p = p.basename
+
       match = p.to_s.match(/^python(\d+\.\d+)$/)
       next if match.blank?
       next if match.captures.blank?
@@ -214,7 +214,7 @@ module FormulaCellarChecks
                       .filter_map { |d| Formula[d].version.to_s[/^\d+\.\d+/] }
 
     return if python_deps.blank?
-    return if pythons.any? { |v| python_deps.include? v }
+    return if pythons.intersect?(python_deps)
 
     pythons = pythons.map { |v| "Python #{v}" }
     python_deps = python_deps.map { |v| "Python #{v}" }
