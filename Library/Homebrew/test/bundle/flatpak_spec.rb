@@ -123,8 +123,9 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "returns remote URLs" do
-        allow(Utils).to receive(:popen_read).with("flatpak", "remote-list", "--system", "--columns=name,url", err: "/dev/null")
-                                             .and_return("flathub\thttps://dl.flathub.org/repo/\nfedora\thttps://registry.fedoraproject.org/\n")
+        allow(Utils).to receive(:popen_read).with("flatpak", "remote-list", "--system", "--columns=name,url",
+                                                  err: "/dev/null")
+                                            .and_return("flathub\thttps://dl.flathub.org/repo/\nfedora\thttps://registry.fedoraproject.org/\n")
         expect(dumper.remote_urls).to eql({
           "flathub" => "https://dl.flathub.org/repo/",
           "fedora"  => "https://registry.fedoraproject.org/",
@@ -218,10 +219,12 @@ RSpec.describe Homebrew::Bundle::Flatpak do
       end
 
       it "handles packages without origin" do
-        allow(Utils).to receive(:popen_read).with("flatpak", "list", "--app", "--columns=application,origin", err: "/dev/null")
-                                             .and_return("org.gnome.Calculator\n")
-        allow(Utils).to receive(:popen_read).with("flatpak", "remote-list", "--system", "--columns=name,url", err: "/dev/null")
-                                             .and_return("flathub\thttps://dl.flathub.org/repo/\n")
+        allow(Utils).to receive(:popen_read).with("flatpak", "list", "--app", "--columns=application,origin",
+                                                  err: "/dev/null")
+                                            .and_return("org.gnome.Calculator\n")
+        allow(Utils).to receive(:popen_read).with("flatpak", "remote-list", "--system", "--columns=name,url",
+                                                  err: "/dev/null")
+                                            .and_return("flathub\thttps://dl.flathub.org/repo/\n")
         expect(dumper.packages_with_remotes).to eql([
           { name: "org.gnome.Calculator", remote: "flathub", remote_url: "https://dl.flathub.org/repo/" },
         ])
@@ -329,8 +332,9 @@ RSpec.describe Homebrew::Bundle::Flatpak do
           end
 
           it "installs from .flatpakref directly" do
-            allow(Utils).to receive(:popen_read).with("flatpak", "list", "--app", "--columns=application,origin", err: "/dev/null")
-                                                 .and_return("org.example.App\texample-origin\n")
+            allow(Utils).to receive(:popen_read).with("flatpak", "list", "--app", "--columns=application,origin",
+                                                      err: "/dev/null")
+                                                .and_return("org.example.App\texample-origin\n")
 
             expect(Homebrew::Bundle).to \
               receive(:system).with("flatpak", "install", "-y", "--system",
