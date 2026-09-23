@@ -18,7 +18,7 @@ The Homebrew package manager may be used on Linux and [Windows Subsystem for Lin
 
 - Install software not packaged by your host distribution
 - Install up-to-date versions of software when your host distribution is old
-- Use the same package manager to manage your macOS, Linux, and Windows systems
+- Use the same package manager to manage your macOS, Linux and Windows systems
 
 ## Install
 

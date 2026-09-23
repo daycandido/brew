@@ -4,7 +4,7 @@ last_review_date: "1970-01-01"
 
 # Taps (Third-Party Repositories)
 
-The `brew tap` command adds more repositories to the list of formulae that Homebrew tracks, updates,
+The `brew tap` command adds more repositories to the list of formulae that Homebrew tracks, updates
 and installs from. By default, `tap` assumes that the repositories come from GitHub,
 but the command isn't limited to any one location.
 
