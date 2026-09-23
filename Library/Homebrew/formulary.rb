@@ -306,6 +306,8 @@ module Formulary
         self.class.instance_variable_get(:@post_install_defined_boolean)
       end
 
+      def self.post_install_steps(&block); end
+
       if formula_struct.service?
         service do
           run(*formula_struct.service_run_args, **formula_struct.service_run_kwargs) if formula_struct.service_run?
