@@ -50,7 +50,7 @@ module Homebrew
           return packages if packages
 
           @packages = if (uv = package_manager_executable)
-            output = `#{uv} tool list --show-with --show-extras 2>/dev/null`
+            output = Utils.popen_read(uv.to_s, "tool", "list", "--show-with", "--show-extras", err: "/dev/null")
             parse_tool_list(output)
           end
           return [] if @packages.nil?
