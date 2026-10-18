@@ -167,4 +167,4 @@ The following timeline outlines expected Tier classifications based on Apple’s
 
 [Apple has also announced](https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment) that Rosetta 2 will remain available as a general-purpose compatibility tool through macOS 27, with only a narrower legacy-games-focused subset planned beyond that.
 
-This does not change the support tier of an otherwise supported Apple Silicon Mac, but it does shorten the expected support window for x86_64-only casks that rely on [`requires_rosetta`](Cask-Cookbook.md#caveats-mini-dsl). See [Acceptable Casks](Acceptable-Casks.md) for the expected acceptance, deprecation, and removal timeline for those casks.
+This does not change the support tier of an otherwise supported Apple Silicon Mac, but it does shorten the expected support window for x86_64-only casks that rely on [`requires_rosetta`](Cask-Cookbook.md#caveats-mini-dsl). See [Acceptable Casks](Acceptable-Casks.md) for the expected acceptance, deprecation and removal timeline for those casks.

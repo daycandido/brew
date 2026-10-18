@@ -55,7 +55,7 @@ Forks must have the vendor’s name as a prefix on the cask’s filename and tok
 
 For unrelated apps that share a name, the most popular one (usually the one already present) stays unprefixed. Since this can be subjective, if you disagree with a decision, open an issue and make your case to the maintainers.
 
-### Unofficial, Vendorless, and Walled builds
+### Unofficial, Vendorless and Walled builds
 
 We do not accept these casks since they involve a higher-than-normal security risk.
 
@@ -78,7 +78,7 @@ If a cask you depend on was removed due to these rules, fear not. Removal of a c
 Casks which do not reach a minimum notability threshold (see [Rejected Casks](#rejected-casks)) aren’t accepted in the main repositories because the increased maintenance burden doesn’t justify the poor usage numbers they will likely get. This notability check is performed automatically by the audit commands we provide, but its decisions aren’t set in stone. A cask which fails the notability check can be added if it is:
 
 1. A popular app that has its own website but the developers use GitHub for hosting the binaries. That repository won’t be notable but the app may be.
-2. Submitted by a maintainer or prolific contributor. A big part of the reasoning for the notability rule is unpopular software garners less attention and the cask gets abandoned, outdated, and broken. Someone with a proven investment in Homebrew Cask is less likely to let that happen for software they depend on.
+2. Submitted by a maintainer or prolific contributor. A big part of the reasoning for the notability rule is unpopular software garners less attention and the cask gets abandoned, outdated and broken. Someone with a proven investment in Homebrew Cask is less likely to let that happen for software they depend on.
 3. A piece of software that was recently released to great fanfare—everyone is talking about it on Twitter and Hacker News and we’ve even gotten multiple premature submissions for it. That’d be a clear case of an app that will reach the threshold in no time so that’s a PR we won’t close immediately (but may wait to merge).
 
 Note that none of these exceptions is a guarantee for inclusion, but examples of situations where we may take a second look.

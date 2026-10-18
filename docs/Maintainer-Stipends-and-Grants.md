@@ -83,7 +83,7 @@ Maintainer hackathons can be organised to rapidly develop new features or otherw
 
 * Well-defined goals that the hackathon will aim to achieve
 * List of (tentatively) attending maintainers and their departure cities
-* Proposed schedule with dates, location, and itemized budget
+* Proposed schedule with dates, location and itemized budget
 
 You can also contact a Lead Maintainer member via Slack for presubmission enquiries.
 
@@ -122,7 +122,7 @@ The Lead Maintainers may reimburse maintainers who attend conferences that advan
 
 To apply for reimbursement of conference expenses, a maintainer must submit to the Lead Maintainers:
 
-* The name, location, and dates of the conference
+* The name, location and dates of the conference
 * The workshops, panels, or other events where maintainer attendance can benefit Homebrew
 * The title of the Homebrew-related presentation (if applicable)
 * An itemized estimate of conference expenses
