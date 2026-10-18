@@ -29,7 +29,6 @@ class Module
   def autoload(const_name, path); end
   def const_added(cname); end
   def extend_object(obj); end
-  def method_added(method_name); end
   def prepend_features(constant); end
 end
 
@@ -125,17 +124,14 @@ module T::Helpers
   def requires_ancestor(&block); end
 end
 
-class T::InexactStruct
-  include ::T::Props
-  include ::T::Props::Plugin
-  include ::T::Props::Optional
-  include ::T::Props::PrettyPrintable
-  include ::T::Props::Serializable
-  include ::T::Props::WeakConstructor
-  include ::T::Props::Constructor
-  extend ::T::Props::ClassMethods
-  extend ::T::Props::Plugin::ClassMethods
-  extend ::T::Props::Serializable::ClassMethods
+module T::Private::Casts
+  class << self
+    def cast(value, type, cast_method); end
+  end
+end
+
+module T::Private::Casts::TapiocaGenericTypeCastPatch
+  def cast(value, type, cast_method); end
 end
 
 module T::Private::Methods
@@ -144,66 +140,9 @@ module T::Private::Methods
   end
 end
 
-class T::Private::Methods::Declaration < ::Struct
-  def bind; end
-  def bind=(_); end
-  def checked; end
-  def checked=(_); end
-  def finalized; end
-  def finalized=(_); end
-  def mod; end
-  def mod=(_); end
-  def mode; end
-  def mode=(_); end
-  def on_failure; end
-  def on_failure=(_); end
-  def override_allow_incompatible; end
-  def override_allow_incompatible=(_); end
-  def params; end
-  def params=(_); end
-  def raw; end
-  def raw=(_); end
-  def returns; end
-  def returns=(_); end
-  def type_parameters; end
-  def type_parameters=(_); end
-
-  class << self
-    def [](*_arg0); end
-    def inspect; end
-    def keyword_init?; end
-    def members; end
-    def new(*_arg0); end
-  end
-end
-
-class T::Private::Methods::DeclarationBlock < ::Struct
-  def blk; end
-  def blk=(_); end
-  def final; end
-  def final=(_); end
-  def loc; end
-  def loc=(_); end
-  def mod; end
-  def mod=(_); end
-  def raw; end
-  def raw=(_); end
-
-  class << self
-    def [](*_arg0); end
-    def inspect; end
-    def keyword_init?; end
-    def members; end
-    def new(*_arg0); end
-  end
-end
-
 module T::Private::Methods::ProcBindPatch
   def finalize_proc(decl); end
 end
-
-module T::Private::Retry; end
-module T::Private::Retry::RETRY; end
 
 class T::Types::Proc < ::T::Types::Base
   def initialize(arg_types, returns, bind = T.unsafe(nil)); end
@@ -235,7 +174,7 @@ module T::Utils::Private
   end
 end
 
-module T::Utils::Private::PrivateCoercePatch
+module T::Utils::Private::TapiocaGenericTypeCoercePatch
   def coerce_and_check_module_types(val, check_val, check_module_type); end
 end
 
@@ -682,6 +621,9 @@ class Tapioca::Commands::DslCompilerList < ::Tapioca::Commands::AbstractDsl
 end
 
 class Tapioca::Commands::DslGenerate < ::Tapioca::Commands::AbstractDsl
+  sig { params(only_bootsnap_rbs_cache: T::Boolean, kwargs: T.untyped).void }
+  def initialize(only_bootsnap_rbs_cache: T.unsafe(nil), **kwargs); end
+
   private
 
   sig { override.void }
@@ -985,7 +927,7 @@ class Tapioca::Dsl::Pipeline
   def abort_if_pending_migrations!; end
 
   sig { params(constants: T::Set[T::Module[T.anything]]).returns(T::Set[T::Module[T.anything]]) }
-  def filter_anonymous_and_reloaded_constants(constants); end
+  def filter_anonymous_constants(constants); end
 
   sig do
     params(
@@ -1096,6 +1038,33 @@ class Tapioca::Gem::Listeners::Base
   sig { params(event: ::Tapioca::Gem::ScopeNodeAdded).void }
   def on_scope(event); end
 end
+
+class Tapioca::Gem::Listeners::Documentation < ::Tapioca::Gem::Listeners::Base
+  sig { params(pipeline: ::Tapioca::Gem::Pipeline, gem_graph: ::Rubydex::Graph).void }
+  def initialize(pipeline, gem_graph); end
+
+  private
+
+  sig { params(name: ::String, sigs: T::Array[::RBI::Sig]).returns(T::Array[::RBI::Comment]) }
+  def documentation_comments(name, sigs: T.unsafe(nil)); end
+
+  sig { override.params(event: ::Tapioca::Gem::NodeAdded).returns(T::Boolean) }
+  def ignore?(event); end
+
+  sig { override.params(event: ::Tapioca::Gem::ConstNodeAdded).void }
+  def on_const(event); end
+
+  sig { override.params(event: ::Tapioca::Gem::MethodNodeAdded).void }
+  def on_method(event); end
+
+  sig { override.params(event: ::Tapioca::Gem::ScopeNodeAdded).void }
+  def on_scope(event); end
+
+  sig { params(line: ::String).returns(T::Boolean) }
+  def rbs_comment?(line); end
+end
+
+Tapioca::Gem::Listeners::Documentation::IGNORED_COMMENTS = T.let(T.unsafe(nil), Array)
 
 class Tapioca::Gem::Listeners::DynamicMixins < ::Tapioca::Gem::Listeners::Base
   include ::Tapioca::Runtime::Reflection
@@ -1291,8 +1260,6 @@ class Tapioca::Gem::Listeners::SorbetSignatures < ::Tapioca::Gem::Listeners::Bas
   def signature_final?(signature); end
 end
 
-Tapioca::Gem::Listeners::SorbetSignatures::TYPE_PARAMETER_MATCHER = T.let(T.unsafe(nil), Regexp)
-
 class Tapioca::Gem::Listeners::SorbetTypeVariables < ::Tapioca::Gem::Listeners::Base
   include ::Tapioca::Runtime::Reflection
 
@@ -1338,34 +1305,6 @@ class Tapioca::Gem::Listeners::Subconstants < ::Tapioca::Gem::Listeners::Base
   sig { override.params(event: ::Tapioca::Gem::ScopeNodeAdded).void }
   def on_scope(event); end
 end
-
-class Tapioca::Gem::Listeners::YardDoc < ::Tapioca::Gem::Listeners::Base
-  sig { params(pipeline: ::Tapioca::Gem::Pipeline).void }
-  def initialize(pipeline); end
-
-  private
-
-  sig { params(name: ::String, sigs: T::Array[::RBI::Sig]).returns(T::Array[::RBI::Comment]) }
-  def documentation_comments(name, sigs: T.unsafe(nil)); end
-
-  sig { override.params(event: ::Tapioca::Gem::NodeAdded).returns(T::Boolean) }
-  def ignore?(event); end
-
-  sig { override.params(event: ::Tapioca::Gem::ConstNodeAdded).void }
-  def on_const(event); end
-
-  sig { override.params(event: ::Tapioca::Gem::MethodNodeAdded).void }
-  def on_method(event); end
-
-  sig { override.params(event: ::Tapioca::Gem::ScopeNodeAdded).void }
-  def on_scope(event); end
-
-  sig { params(line: ::String).returns(T::Boolean) }
-  def rbs_comment?(line); end
-end
-
-Tapioca::Gem::Listeners::YardDoc::IGNORED_COMMENTS = T.let(T.unsafe(nil), Array)
-Tapioca::Gem::Listeners::YardDoc::IGNORED_SIG_TAGS = T.let(T.unsafe(nil), Array)
 
 class Tapioca::Gem::MethodNodeAdded < ::Tapioca::Gem::NodeAdded
   sig do
@@ -1696,9 +1635,6 @@ class Tapioca::Gemfile::GemSpec
 
   sig { returns(::String) }
   def name; end
-
-  sig { void }
-  def parse_yard_docs; end
 
   sig { returns(::String) }
   def rbi_file_name; end
@@ -2031,6 +1967,9 @@ module Tapioca::RBIHelper
   sig { params(param: ::RBI::Param, type: ::String).returns(::RBI::TypedParam) }
   def create_typed_param(param, type); end
 
+  sig { params(type_strings: T::Array[::String]).returns(T::Array[::String]) }
+  def extract_type_parameters(type_strings); end
+
   sig { params(sig_string: ::String).returns(::String) }
   def sanitize_signature_types(sig_string); end
 
@@ -2053,6 +1992,16 @@ module Tapioca::RBIHelper
     def serialize_type_variable(type, variance, fixed, upper, lower); end
   end
 end
+
+Tapioca::RBIHelper::TYPE_PARAMETER_MATCHER = T.let(T.unsafe(nil), Regexp)
+module Tapioca::RBS; end
+
+module Tapioca::RBS::BootsnapGuard
+  sig { params(_kwargs: T.untyped).void }
+  def setup(**_kwargs); end
+end
+
+class Tapioca::RBS::HostBootsnapSetupError < ::StandardError; end
 
 class Tapioca::RepoIndex
   sig { void }
@@ -2114,7 +2063,6 @@ module Tapioca::Runtime::GenericTypeRegistry
 
     def create_generic_type(constant, name); end
     def create_safe_subclass(constant); end
-    def lookup_or_initialize_type_variables(constant); end
   end
 end
 
@@ -2299,6 +2247,9 @@ module Tapioca::SorbetHelper
 
   sig { params(feature: ::Symbol, version: T.nilable(::Gem::Version)).returns(T::Boolean) }
   def sorbet_supports?(feature, version: T.unsafe(nil)); end
+
+  sig { params(source: ::String, rbi_mode: T::Boolean, on_failure: T.proc.params(stderr: ::String).void).void }
+  def sorbet_syntax_check!(source, rbi_mode:, &on_failure); end
 end
 
 Tapioca::SorbetHelper::FEATURE_REQUIREMENTS = T.let(T.unsafe(nil), Hash)
@@ -2341,6 +2292,9 @@ module Tapioca::Static::SymbolLoader
 
     sig { params(gem: ::Tapioca::Gemfile::GemSpec).returns(T::Set[::String]) }
     def gem_symbols(gem); end
+
+    sig { params(paths: T::Array[::Pathname]).returns(::Rubydex::Graph) }
+    def graph_from_paths(paths); end
 
     sig { returns(T::Set[::String]) }
     def payload_symbols; end

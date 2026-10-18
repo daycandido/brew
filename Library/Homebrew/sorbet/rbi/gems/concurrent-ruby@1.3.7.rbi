@@ -312,6 +312,7 @@ end
 
 module Concurrent::AtomicNumericCompareAndSetWrapper
   def compare_and_set(old_value, new_value); end
+  def compare_and_swap(old_value, new_value); end
 end
 
 class Concurrent::AtomicReference < ::Concurrent::MutexAtomicReference
@@ -322,6 +323,9 @@ end
 Concurrent::AtomicReferenceImplementation = Concurrent::MutexAtomicReference
 
 class Concurrent::CRubySet < ::Set
+  include ::Set::SubclassCompatible
+  extend ::Set::SubclassCompatible::ClassMethods
+
   def initialize(*args, &block); end
 
   def &(*args); end
@@ -351,14 +355,14 @@ class Concurrent::CRubySet < ::Set
   def divide(*args); end
   def each(*args); end
   def empty?(*args); end
+  def encode_with(*args); end
   def eql?(*args); end
   def filter!(*args); end
   def flatten(*args); end
   def flatten!(*args); end
-  def flatten_merge(*args); end
-  def freeze(*args); end
   def hash(*args); end
   def include?(*args); end
+  def init_with(*args); end
   def inspect(*args); end
   def intersect?(*args); end
   def intersection(*args); end
@@ -1069,8 +1073,6 @@ class Concurrent::MutexAtomicReference
 
   def initialize(value = T.unsafe(nil)); end
 
-  def _compare_and_set(old_value, new_value); end
-  def compare_and_swap(old_value, new_value); end
   def get; end
   def get_and_set(new_value); end
   def set(new_value); end
@@ -1081,6 +1083,10 @@ class Concurrent::MutexAtomicReference
   protected
 
   def synchronize; end
+
+  private
+
+  def _compare_and_set(old_value, new_value); end
 end
 
 class Concurrent::MutexCountDownLatch < ::Concurrent::Synchronization::LockableObject

@@ -15,12 +15,14 @@ class SimpleCov::Formatter::CoberturaFormatter
 
   private
 
+  def build_branches_by_line(file, branches_by_line); end
+  def condition_start_line(condition); end
   def extract_rate(percent); end
   def output_message(result, output_path); end
   def project_root; end
   def resolve_filename(filename); end
   def result_to_xml(result); end
-  def set_branch_attributes(line, file_line, branched_lines, branched_lines_covered); end
+  def set_branch_attributes(line, file_line, branches_by_line); end
   def set_class_attributes(class_, file); end
   def set_coverage_attributes(coverage, result); end
   def set_line_attributes(line, file_line); end

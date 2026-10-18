@@ -1551,6 +1551,7 @@ class Formula
   def pour_bottle? = true
 
   delegate pour_bottle_check_unsatisfied_reason: :"self.class"
+  delegate post_install_steps: :"self.class"
 
   # Can be overridden to run commands on both source and bottle installation.
   sig { overridable.void }
@@ -1559,6 +1560,19 @@ class Formula
   sig { returns(T::Boolean) }
   def post_install_defined?
     method(:post_install).owner != Formula
+  end
+
+  sig { returns(T::Boolean) }
+  def post_install_steps_defined? = self.class.post_install_steps_defined?
+
+  sig { returns(T::Boolean) }
+  def post_install_steps_conflict?
+    post_install_steps_defined? && post_install_defined?
+  end
+
+  sig { void }
+  def warn_on_post_install_steps_conflict
+    opoo "#{full_name}: `post_install` is ignored because `post_install_steps` are defined!"
   end
 
   sig { void }
@@ -1594,7 +1608,8 @@ class Formula
         ENV.activate_extensions!
 
         with_logging("post_install") do
-          post_install
+          post_install if post_install_defined?
+          Homebrew::InstallSteps::Runner.new(self, post_install_steps).run if post_install_steps_defined?
         end
       end
     ensure
@@ -3672,6 +3687,7 @@ class Formula
       @conflicts.freeze
       @skip_clean_paths.freeze
       @link_overwrite_paths.freeze
+      @post_install_steps.freeze
       @preserve_rpath&.freeze
       super
     end
@@ -3851,6 +3867,41 @@ class Formula
 
       env_var = Homebrew::EnvConfig.send(:"formula_#{phase}_network")
       env_var.nil? ? network_access_allowed[phase] : env_var == "allow"
+    end
+
+    sig { returns(T::Boolean) }
+    def post_install_steps_defined? = @post_install_steps_defined == true
+
+    # Declarative steps to run after bottle installation.
+    #
+    # ### Example
+    #
+    # ```ruby
+    # post_install_steps do
+    #   mkdir "log/foo", base: :var
+    # end
+    # ```
+    #
+    # @api public
+    sig { params(steps: T.untyped, block: T.nilable(T.proc.void)).returns(Homebrew::InstallSteps::Steps) }
+    def post_install_steps(*steps, &block)
+      current_steps = @post_install_steps || []
+      return current_steps if steps.empty? && block.nil?
+
+      @post_install_steps_defined = T.let(true, T.nilable(T::Boolean))
+      current_steps.concat(
+        if block
+          Homebrew::InstallSteps::DSL.build(
+            default_base:        :var,
+            default_source_base: :prefix,
+            default_target_base: :prefix,
+            &block
+          ).steps
+        else
+          steps
+        end,
+      )
+      @post_install_steps = current_steps
     end
 
     # The homepage for the software. Used by users to get more information

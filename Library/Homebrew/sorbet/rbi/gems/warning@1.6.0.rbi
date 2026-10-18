@@ -13,6 +13,8 @@ end
 module Warning::Processor
   def clear; end
   def dedup; end
+  def error_class; end
+  def error_class=(_arg0); end
   def freeze; end
   def ignore(regexp, path = T.unsafe(nil)); end
   def process(path = T.unsafe(nil), actions = T.unsafe(nil), &block); end

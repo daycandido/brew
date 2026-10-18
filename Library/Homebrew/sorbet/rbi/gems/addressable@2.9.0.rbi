@@ -115,6 +115,7 @@ class Addressable::Template::MatchData
 end
 
 Addressable::Template::RESERVED = T.let(T.unsafe(nil), String)
+Addressable::Template::RESERVED_NO_COMMA = T.let(T.unsafe(nil), String)
 class Addressable::Template::TemplateOperatorAbortedError < ::StandardError; end
 Addressable::Template::UNRESERVED = T.let(T.unsafe(nil), String)
 Addressable::Template::VARIABLE_LIST = T.let(T.unsafe(nil), Regexp)
