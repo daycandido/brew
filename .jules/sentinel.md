@@ -1,0 +1,4 @@
+## 2024-05-24 - Fix command injection vulnerability in vscode bundle extension
+**Vulnerability:** Shell execution with string interpolation (`"#{vscode}" --list-extensions 2>/dev/null`) was used to execute a command, making it vulnerable to command injection if the executable path contained malicious shell characters.
+**Learning:** In Ruby, using backticks or `%x()` with string interpolation executes via the shell. This can lead to command injection if variables like file paths are user-controlled or contain special shell metacharacters.
+**Prevention:** Use array arguments with methods like `Kernel.system`, `Open3.popen3`, or Homebrew's `Utils.popen_read` to bypass the shell and execute the command directly. Also, properly map standard error when replacing `2>/dev/null` by using `err: "/dev/null"`.
