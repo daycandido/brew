@@ -103,7 +103,7 @@ module Homebrew
 
       paths.reject do |path|
         top_level_paths.any? do |_other_top_level_path|
-          path.ascend.drop(3).any? { |parent_path| top_level_paths.include?(parent_path) }
+          path.ascend.drop(3).intersect?(top_level_paths)
         end
       end
     end
