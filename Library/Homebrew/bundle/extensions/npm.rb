@@ -39,7 +39,8 @@ module Homebrew
 
           @packages = if (npm = package_manager_executable) &&
                          (!npm.to_s.start_with?("/") || npm.exist?)
-            parse_package_list(`#{npm} list -g --depth=0 --json 2>/dev/null`)
+            # Prevent shell injection vulnerabilities by using Utils.popen_read instead of backticks
+            parse_package_list(Utils.popen_read(npm.to_s, "list", "-g", "--depth=0", "--json", err: "/dev/null"))
           end
           return [] if @packages.nil?
 
