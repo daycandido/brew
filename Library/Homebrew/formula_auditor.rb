@@ -143,7 +143,7 @@ module Homebrew
         valid_versioned_aliases = versioned_aliases & valid_main_alias_names
         invalid_versioned_aliases = versioned_aliases - valid_main_alias_names - valid_other_alias_names
 
-        latest_versioned_formula = versioned_formulae.map(&:name).first
+        latest_versioned_formula = versioned_formulae.first&.name
 
         if valid_versioned_aliases.empty? && alias_name != latest_versioned_formula
           if formula.tap
@@ -456,7 +456,7 @@ module Homebrew
 
         next unless @core_tap
 
-        if spec.requirements.map(&:recommended?).any? || spec.requirements.map(&:optional?).any?
+        if spec.requirements.any?(&:recommended?) || spec.requirements.any?(&:optional?)
           problem "Formulae in homebrew/core should not have optional or recommended requirements"
         end
       end
