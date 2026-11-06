@@ -307,7 +307,7 @@ class LinkageChecker
       next true if Formula[full_name].bin.directory?
 
       name = Utils.name_from_full_name(full_name)
-      @brewed_dylibs.keys.map { |l| Utils.name_from_full_name(l) }.include?(name)
+      @brewed_dylibs.each_key.any? { |l| Utils.name_from_full_name(l) == name }
     end
 
     # Remove no_linkage dependencies from unnecessary_deps since they're expected not to have linkage
