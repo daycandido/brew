@@ -294,7 +294,7 @@ module Homebrew
             begin
               raise ArgumentError, "dsl is unset!" unless @dsl
 
-              kept_formulae = @dsl.entries.select { |e| e.type == :brew }.map(&:name)
+              kept_formulae = @dsl.entries.filter_map { |e| e.name if e.type == :brew }
               kept_formulae += Homebrew::Bundle::Cask.formula_dependencies(kept_casks)
               kept_formulae.map! do |f|
                 Homebrew::Bundle::Brew.formula_aliases.fetch(
@@ -364,7 +364,7 @@ module Homebrew
           require "bundle/tap"
 
           kept_formulae = self.kept_formulae(global:, file:).filter_map { lookup_formula(it) }
-          kept_taps = @dsl.entries.select { |e| e.type == :tap }.map(&:name)
+          kept_taps = @dsl.entries.filter_map { |e| e.name if e.type == :tap }
           kept_taps += @dsl.entries.filter_map do |entry|
             case entry.type
             when :brew
