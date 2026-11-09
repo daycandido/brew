@@ -72,3 +72,6 @@ This is a Ruby repository with Bash scripts for faster execution that provides t
 - `Library/Homebrew/formula.rb`: Homebrew's Formula class and DSL.
 - `docs/`: Documentation for Homebrew users, contributors and maintainers. Consult these for best practices and help.
 - `package/`: Files to generate the macOS `.pkg` file.
+
+## Changes from Day Candido
+- 2024-05-30: Replaced `.map(&:name).include?(name)` with `.any? { |dep| dep.name == name }` in `Library/Homebrew/test_runner_formula.rb` to prevent array allocation. Tested with `bin/brew tests --only test_runner_formula`. Evidence limit: tests pass, but live telemetry limits absolute performance measurement in isolation.

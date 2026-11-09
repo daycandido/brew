@@ -113,7 +113,7 @@ class TestRunnerFormula
 
       Homebrew::SimulateSystem.with(os:, arch:) do
         (include_uninstalled ? Formula.all : Formula.installed)
-          .select { |candidate_f| candidate_f.deps.map(&:name).include?(name) }
+          .select { |candidate_f| candidate_f.deps.any? { |dep| dep.name == name } }
           .map { |formula| TestRunnerFormula.new(formula, include_uninstalled:) }
           .freeze
       end
