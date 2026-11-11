@@ -1,0 +1,3 @@
+## 2024-05-19 - [Optimize Array#include? calls after Array#map]
+**Learning:** In Ruby, chaining `.map(&:property).include?(value)` evaluates the entire collection, allocates an intermediate array, and then searches the array. This creates unnecessary garbage collection pressure, particularly inside loops or for large collections.
+**Action:** Replace `.map(&:property).include?(value)` with `.any? { |item| item.property == value }`. This allows the evaluation to short-circuit as soon as a match is found and avoids allocating an intermediate array. This optimization applies to several files in Homebrew, specifically `Library/Homebrew/test_runner_formula.rb`, `Library/Homebrew/extend/os/linux/cmd/update-report.rb`, and `Library/Homebrew/extend/os/linux/diagnostic.rb`.
